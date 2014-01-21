@@ -8,26 +8,18 @@ var g3 = hardware.gpio(3)
 var sleepTime = 2000;
 var txCount = 0;
 var rxCount = 0;
-// g3.low();
-// tessel.sleep(sleepTime);
-// g3.high();
-// tessel.sleep(sleepTime);
 
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 function decode(array)
 {
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    // decoded += String.fromCharCode(array[i]);
-    // potential = String.fromCharCode(array[i]);
-    // console.log(array[i], '\t', String.fromCharCode(array[i]))
-    if (array[i] < 14)//potential == '\x0a' || potential == '\x0d')
+    if (array[i] < 14)
       decoded += '\n'
     else
       decoded += String.fromCharCode(array[i]);
-    // // console.log(decoded)
   }
   return decoded;
 }
@@ -41,12 +33,15 @@ function printRecieved(r)
   rxCount++;
 }
 
-function send(cmd)
+function send(cmd, verbose)
 {
-  uart.write(cmd)
-  // tessel.sleep(sleepTime)
-  console.log(txCount, '\tSent:\n\t', cmd)
-  txCount++;
+  verbose = verbose || 0;
+  uart.write(cmd);
+  if (verbose)
+  {  
+    console.log(txCount, '\tSent:\n\t', cmd);
+    txCount++;
+  }
 }
 
 function SMS(number, message)
@@ -69,39 +64,30 @@ function SMS(number, message)
         }, 500);
       }, 500);
     }, 500);
-  // tessel.sleep(sleepTime);
+}
 
-  // send('AT+CMGF=1\r\n');
-  // tessel.sleep(sleepTime);
-
-  // send('AT+CMGS="' + number + '"\r\n');
-  // tessel.sleep(sleepTime);
-
-  // send(message + '\r\n');
-  // tessel.sleep(sleepTime);
-
-  // send([0x1A]);
+function heyListen(reps)
+{
+  reps = reps || 3;
+  for (var i = 0; i < reps; i++)
+  {
+    setTimeout(function(){
+      send('AT');
+    }, 200 * i);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 uart.on('data', function(bytes) {
-  // console.log('\n--------------------\nNEW DATA\n', printRecieved(bytes), '\n--------------------\n')
-  tessel.sleep(1)
-  printRecieved(bytes)
+  tessel.sleep(1);
+  printRecieved(bytes);
 });
 
 // tessel.sleep(10000);
-console.log('gogogo!')
+console.log('gogogo!');
 
-send('AT')
-tessel.sleep(200);
-send('AT')
-tessel.sleep(200);
-send('AT')
-tessel.sleep(200);
-
-// SMS(15555555555, 'You know what we haven\'t played in a while? Jialyaball.');
+heyListen();
 
 
 
@@ -111,54 +97,7 @@ tessel.sleep(200);
 
 
 
-
-// setInterval(function(){
-//     send('AT+CBC\r\n')
-//   }, 10)
-
-// tessel.sleep(3000);
-
-// SMS();
-
-// g3.high()
-// tessel.sleep(sleepTime);
-// g3.input();
-// tessel.sleep(sleepTime);
-
-// //
-
-// g3.output();
-// g3.low();
-// tessel.sleep(sleepTime);
-// g3.input();
-// tessel.sleep(sleepTime);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// tessel.sleep(1000);
-
-
-// commands = ['AT\r\n', 'AT+CMGF=1\r\n']//, 'AT+CMGS="15555555555"\r\n', 'message goes here\r\n']//, 0x1A]
-
-// var characters = 'AT\r\n'
-
-
-// for (c in commands)
-//   send(commands[c])
-
-
-
+//    for history's sake
 
 // THIS BLOCK WORKED
 // var characters = 'AT\r\n'
