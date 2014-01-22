@@ -97,7 +97,22 @@ function setNotifications(mode, clearBuffer)
   mode = mode || 0;                 //  off
   clearBuffer = clearBuffer || 0;   //  don't clear
 
-  message = 'AT+CGEREP'
+  send('AT+CGEREP=' + mode + ',' + clearBuffer + '\r\n');
+}
+
+function getConnectionStatus()
+{
+  send('AT+CGATT?\r\n');
+}
+
+function setConnectionStatus(state)
+{
+  /*
+  state
+    0   off (disconnect)
+    1   on (connect)
+  */
+  send('AT+CGATT=' + state + '\r\n');
 }
 
 ////////////////////////////////////////////////////////////////////////////////
