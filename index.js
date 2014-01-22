@@ -204,6 +204,116 @@ function microphone(state)
     state = '=' + String(state);
   send('AT+CEXTERNTONE' + state + '\r\n');
 }
+
+function setNetlightTiming(mode, on, off)
+{
+  /*
+  don't like the default blinks? OK.
+
+  defaults:
+    1,53,790
+    2,53,2990
+    3,53,287
+
+  mode
+    1   when the module is disconnected
+    2   when the module is connected
+    3   when in PPP comms
+    ?   get the state
+  on
+    [40 - 65535]  how long you want it on, in ms
+  off
+    [40 - 65535]  how long you want it off, in ms
+  */
+
+  mode = mode || '?';
+
+  if (mode == '?')      //  read
+    send('AT+SLEDS?\r\n');
+  else                  //  write
+  {  
+    on = on || 53; 
+    off = off || [790, 2990, 287][mode];
+    send('AT+SLEDS=' + mode + ',' + on + ',' + off + '\r\n');
+  }
+}
+
+function rejectMode(mode)
+{
+  /*
+  do you want to answer incoming calls?
+
+  mode
+    0   enable
+    1   fobid all
+    2   forbid voice, enable CSD
+    ?   get current state
+  */
+
+  mode = mode || '?';
+
+  if (mode == '?')      //  read
+    send('AT+GSMBUSY?\r\n');
+  else                  //  write
+    send('AT+GSMBUSY=' + mode + '\r\n');
+}
+
+function voiceCoding(mode)
+{
+  /*
+  Get/set voice coding type? Not toatally sure what these do...
+
+  mode
+    0   FR
+    1   EFR/FR
+    2   HR/FR
+    3   FR/HR
+    4   HR/EFR
+    5   EFR/HR
+    6   AMR-FR/EFR,AMHR-HR
+    7   AMR-FR/EFR,AMR-HR/HR
+    8   AMR-HR/HR/AMR-FR/EFR
+    9   AMR-HR/AMR-FR/EFR
+    10  AMR-HR/AMR-FR/FR
+    11  AMR-HR/HR/AMR-FR
+    12  AMR-FR/AMR-HR
+    13  AMR-FR/FR/AMR-HR
+    14  AMR-FR/FR/AMR-HR/HR
+    15  AMR-FR/EFR/FR/AMR-HR/HR
+    16  AMR-HR/AMR-FR/EFR/FR/HR
+    17  AMR-FR/AMR-HR/EFR/FR/HR
+    ?   get current state
+  */
+
+  mode = mode || '?';
+
+  if (mode == '?')      //  read
+    send('AT+SVR?\r\n');
+  else                  //  write
+    send('AT+SVR=' + mode + '\r\n');
+}
+
+function audioSwitch(mode)
+{
+  /*
+  control automatic audio channel switching
+
+  mode
+    0   disable + disable headset HOOK function
+    1   enable + enable headset HOOK function
+    2   disable + enable headset HOOK function
+    ?   get current state
+  */
+
+  mode = mode || '?';
+
+  if (mode == '?')      //  read
+    send('AT+CAAS?\r\n');
+  else                  //  write
+    send('AT+CAAS=' + mode + '\r\n');
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 process.on('message', function (data) {
@@ -235,6 +345,7 @@ tessel.sleep(100);
 // setInterval(function(){
 //   send('AT+CMGR=2,1\r\n');
 // }, 5000);
+
 
 // setInterval(function(){
 //   send('AT+CMGR=3,1\r\n');
