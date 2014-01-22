@@ -5,7 +5,6 @@ var uart = hardware.UART({baudrate: 19200});
 var g3 = hardware.gpio(3)
           .output()
           .high();
-var sleepTime = 2000;
 var txCount = 0;
 var rxCount = 0;
 
@@ -46,7 +45,7 @@ function send(cmd, verbose)
 
 function SMS(number, message)
 {
-  number = String(number) || '15555555555';
+  number = String(number) || '15555555555';   //  sorry, not sorry, Jia
   message = message || 'text from a Tessel';
 
   setTimeout(function(){
@@ -68,6 +67,7 @@ function SMS(number, message)
 
 function heyListen(reps)
 {
+  //  make sure the module is awake
   reps = reps || 3;
   for (var i = 0; i < reps; i++)
   {
@@ -115,12 +115,15 @@ function setConnectionStatus(state)
   send('AT+CGATT=' + state + '\r\n');
 }
 
-function netlight(state)
+function netlightGPRS(state)
 {
   /*
+  bind the netlight's flashing to the GPRS status
+
   state
     0   disable
     1   enable
+    ?   what my state again?
   */
   state = state || '?';
 
@@ -132,9 +135,75 @@ function netlight(state)
 
 function getNetworkInfo()
 {
+  //  cell network information
   send('AT+CNETSCAN\r\n');
 }
 
+function getWhitelist()
+{
+  //  who you can call/SMS
+  send('AT+CWITELIST=?')
+}
+
+var lazyWhitelistIndex = 1;
+function setWhitelist(mode, number, index)
+{
+  /*
+  enable/disable the whitelist and/or add/remove a number to/from it
+
+  mode
+    0   off
+    1   on
+  number
+    [some 10-digit number/string]
+  index
+    0   remove from the list
+    1   add tot he list
+  */
+  mode = mode || 1;                     //  enable the whitelist
+  number = number || 'X';               //  dummy
+  index = index || lazyWhitelistIndex;  //  be lazy and let it keep track
+
+  if (number != 'X')
+    send('AT+CWITELIST=' + mode);
+  else
+  {
+    send('AT+CWITELIST=' + mode + ',' + number + ',' + index);
+    if (index == lazyWhitelistIndex)
+      lazyWhitelistIndex ++;
+  }
+}
+
+function netlight(state)
+{
+  /* 
+  turn it on or off
+
+  state
+    0   off
+    1   on
+  */
+
+  state = state || 1;   //  on
+  send('AT+CNETLIGHT=' + state + '\r\n');
+}
+
+function microphone(state)
+{
+  /* 
+  turn it on or off
+
+  state
+    0   mic on
+    1   mic off
+    ?   what stae am I in?
+  */
+
+  state = state || '?';   //  what state am I in?
+  if (state != '?')
+    state = '=' + String(state);
+  send('AT+CEXTERNTONE' + state + '\r\n');
+}
 ////////////////////////////////////////////////////////////////////////////////
 
 process.on('message', function (data) {
@@ -188,19 +257,19 @@ tessel.sleep(100);
 // THIS BLOCK WORKED
 // var characters = 'AT\r\n'
 // send(characters);
-// tessel.sleep(sleepTime);
+// tessel.sleep(2000);
 
 // characters = 'AT+CMGF=1\r\n'
 // send(characters);
-// tessel.sleep(sleepTime);
+// tessel.sleep(2000);
 
 // characters = 'AT+CMGS="15555555555"\r\n'
 // send(characters);
-// tessel.sleep(sleepTime);
+// tessel.sleep(2000);
 
 // characters = 'text from a Tessel\r\n'
 // send(characters);
-// tessel.sleep(sleepTime);
+// tessel.sleep(2000);
 
 // characters = [0x1A]
 // send(characters);
