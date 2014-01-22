@@ -27,8 +27,8 @@ function decode(array)
 function printRecieved(r)
 {
   message = decode(r)
-  if (message == '\n\nUNDER-VOLTAGE WARNNING\n\n')
-    return
+  // if (message == '\n\nUNDER-VOLTAGE WARNNING\n\n')
+  //   return
   console.log(rxCount, '\tRecieved:\n\t', message, '\n');
   rxCount++;
 }
@@ -72,24 +72,75 @@ function heyListen(reps)
   for (var i = 0; i < reps; i++)
   {
     setTimeout(function(){
-      send('AT');
-    }, 200 * i);
+      send('AT', 1);
+    }, 200 * (i + 1));
   }
+}
+
+function getNotificationSetting()
+{
+  send('AT+CGEREP?\r\n');
+}
+
+function setNotifications(mode, clearBuffer)
+{
+  /*
+  mode
+    0   buffer them
+    1   discard
+    2   buffer when you're in the middle of something, send when you're done
+
+  clearBuffer
+    0   keep the buffer
+    1   flush
+  */
+  mode = mode || 0;                 //  off
+  clearBuffer = clearBuffer || 0;   //  don't clear
+
+  message = 'AT+CGEREP'
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+process.on('message', function (data) {
+  // console.log(data.substring(1, data.length-1));
+  send(data.substring(1, data.length - 1) + "\r\n");
+});
+
+console.log('waiting for messages...');
+
 uart.on('data', function(bytes) {
-  tessel.sleep(1);
   printRecieved(bytes);
 });
 
-// tessel.sleep(10000);
 console.log('gogogo!');
+tessel.sleep(50);
+g3.low();
+tessel.sleep(1200);
+g3.high();
+tessel.sleep(3000);
 
 heyListen();
 
+tessel.sleep(100);
 
+// setInterval(function(){
+//   send('AT+CMGR=1,1\r\n');
+// }, 4000);
+
+// setInterval(function(){
+//   send('AT+CMGR=2,1\r\n');
+// }, 5000);
+
+// setInterval(function(){
+//   send('AT+CMGR=3,1\r\n');
+// }, 6000);
+
+// setInterval(function(){
+//   send('AT+CMGR=4,1\r\n');
+// }, 7000);
+
+// SMS(phone#,'messagetext');
 
 
 
