@@ -115,6 +115,26 @@ function setConnectionStatus(state)
   send('AT+CGATT=' + state + '\r\n');
 }
 
+function netlight(state)
+{
+  /*
+  state
+    0   disable
+    1   enable
+  */
+  state = state || '?';
+
+  if (state == '?')           //  read
+    send('AT+CSGS?');
+  else                        //  write
+    send('AT+CSGS=' + state);
+}
+
+function getNetworkInfo()
+{
+  send('AT+CNETSCAN\r\n');
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 process.on('message', function (data) {
