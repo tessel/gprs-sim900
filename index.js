@@ -58,11 +58,11 @@ function SMS(number, message)
           send(message + '\r\n');
           setTimeout(function(){
             send([0x1A]);
-            }, 2000);
-          }, 750);
-        }, 500);
-      }, 500);
-    }, 500);
+            }, 3000);//2000);
+          }, 2000);//750);
+        }, 2000);//500);
+      }, 2000);//500);
+    }, 2000);//500);
 }
 
 function heyListen(reps)
@@ -73,7 +73,7 @@ function heyListen(reps)
   {
     setTimeout(function(){
       send('AT', 1);
-    }, 200 * (i + 1));
+    }, 500 * (i + 1));
   }
 }
 
@@ -316,6 +316,15 @@ function audioSwitch(mode)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+var led1 = tessel.led(1).output().high();
+var led2 = tessel.led(2).output().low();
+
+setInterval(function () {
+  led1.toggle();
+  led2.toggle();
+}, 250);
+
+
 process.on('message', function (data) {
   // console.log(data.substring(1, data.length-1));
   send(data.substring(1, data.length - 1) + "\r\n");
@@ -329,14 +338,18 @@ uart.on('data', function(bytes) {
 
 console.log('gogogo!');
 tessel.sleep(50);
-g3.low();
-tessel.sleep(1200);
-g3.high();
-tessel.sleep(3000);
+// g3.low();
+// tessel.sleep(1200);
+// g3.high();
+// tessel.sleep(3000);
 
 heyListen();
 
 tessel.sleep(100);
+
+setTimeout(function () {
+  SMS(15555555555, "test") 
+  }, 25000);
 
 // setInterval(function(){
 //   send('AT+CMGR=1,1\r\n');
