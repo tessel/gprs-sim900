@@ -384,7 +384,7 @@ setTimeout(function () {
 // tessel.sleep(2000);
 
 // characters = 'AT+CMGF=1\r\n'
-// send(characters);
+// send(characters);x
 // tessel.sleep(2000);
 
 // characters = 'AT+CMGS="15555555555"\r\n'
