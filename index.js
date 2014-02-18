@@ -1,5 +1,5 @@
 var tessel = require('tessel');
-var hardware = tessel.port('d');
+var hardware = tessel.port('a');
 
 var uart = hardware.UART({baudrate: 19200});
 var g3 = hardware.gpio(3)
