@@ -1,5 +1,5 @@
 var tessel = require('tessel');
-var hardware = tessel.port('a');
+var hardware = tessel.port('d');
 
 var uart = hardware.UART({baudrate: 19200});
 var g3 = hardware.gpio(3)
@@ -15,12 +15,12 @@ function decode(array)
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    if (array[i] < 14)
+    if (array[i] < 14) 
       decoded += '\n'
     else
       decoded += String.fromCharCode(array[i]);
   }
-  return decoded;
+  return decoded; 
 }
 
 function printRecieved(r)
