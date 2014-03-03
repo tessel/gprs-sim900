@@ -8,23 +8,25 @@ var g3 = hardware.gpio(3)
 var txCount = 0;
 var rxCount = 0;
 
+var messages = [];
+var previousCharacter = '';
+var latestMessage = '';
+
 //////////////////////////////////////////////////////////////////////////////
 
-function decode(array)
-{
+function decode(array) {
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    if (array[i] < 14)
-      decoded += '\n'
+    if (array[i] < 14) 
+      decoded += '\n';
     else
       decoded += String.fromCharCode(array[i]);
   }
-  return decoded;
+  return decoded; 
 }
 
-function printRecieved(r)
-{
+function printRecieved(r) {
   message = decode(r)
   // if (message == '\n\nUNDER-VOLTAGE WARNNING\n\n')
   //   return
@@ -32,8 +34,15 @@ function printRecieved(r)
   rxCount++;
 }
 
-function send(cmd, verbose)
-{
+function printMessage(message) {
+  // message = decode(r)
+  // if (message == '\n\nUNDER-VOLTAGE WARNNING\n\n')
+  //   return
+  console.log(rxCount, '\tRecieved:\n\t', message, '\n');
+  rxCount++;
+}
+
+function send(cmd, verbose) {
   verbose = verbose || 0;
   uart.write(cmd);
   if (verbose)
@@ -43,8 +52,7 @@ function send(cmd, verbose)
   }
 }
 
-function SMS(number, message)
-{
+function SMS(number, message) {
   number = String(number) || '15555555555';   //  sorry, not sorry, Jia
   message = message || 'text from a Tessel';
 
@@ -58,32 +66,29 @@ function SMS(number, message)
           send(message + '\r\n');
           setTimeout(function(){
             send([0x1A]);
-            }, 2000);
-          }, 750);
-        }, 500);
-      }, 500);
-    }, 500);
+            }, 3000);//2000);
+          }, 2000);//750);
+        }, 2000);//500);
+      }, 2000);//500);
+    }, 2000);//500);
 }
 
-function heyListen(reps)
-{
+function heyListen(reps) {
   //  make sure the module is awake
   reps = reps || 3;
   for (var i = 0; i < reps; i++)
   {
     setTimeout(function(){
       send('AT', 1);
-    }, 200 * (i + 1));
+    }, 500 * (i + 1));
   }
 }
 
-function getNotificationSetting()
-{
+function getNotificationSetting() {
   send('AT+CGEREP?\r\n');
 }
 
-function setNotifications(mode, clearBuffer)
-{
+function setNotifications(mode, clearBuffer) {
   /*
   mode
     0   buffer them
@@ -100,13 +105,11 @@ function setNotifications(mode, clearBuffer)
   send('AT+CGEREP=' + mode + ',' + clearBuffer + '\r\n');
 }
 
-function getConnectionStatus()
-{
+function getConnectionStatus() {
   send('AT+CGATT?\r\n');
 }
 
-function setConnectionStatus(state)
-{
+function setConnectionStatus(state) {
   /*
   state
     0   off (disconnect)
@@ -115,8 +118,7 @@ function setConnectionStatus(state)
   send('AT+CGATT=' + state + '\r\n');
 }
 
-function netlightGPRS(state)
-{
+function netlightGPRS(state) {
   /*
   bind the netlight's flashing to the GPRS status
 
@@ -133,21 +135,18 @@ function netlightGPRS(state)
     send('AT+CSGS=' + state);
 }
 
-function getNetworkInfo()
-{
+function getNetworkInfo() {
   //  cell network information
   send('AT+CNETSCAN\r\n');
 }
 
-function getWhitelist()
-{
+function getWhitelist() {
   //  who you can call/SMS
   send('AT+CWITELIST=?')
 }
 
 var lazyWhitelistIndex = 1;
-function setWhitelist(mode, number, index)
-{
+function setWhitelist(mode, number, index) {
   /*
   enable/disable the whitelist and/or add/remove a number to/from it
 
@@ -174,8 +173,7 @@ function setWhitelist(mode, number, index)
   }
 }
 
-function netlight(state)
-{
+function netlight(state) {
   /* 
   turn it on or off
 
@@ -188,8 +186,7 @@ function netlight(state)
   send('AT+CNETLIGHT=' + state + '\r\n');
 }
 
-function microphone(state)
-{
+function microphone(state) {
   /* 
   turn it on or off
 
@@ -205,8 +202,7 @@ function microphone(state)
   send('AT+CEXTERNTONE' + state + '\r\n');
 }
 
-function setNetlightTiming(mode, on, off)
-{
+function setNetlightTiming(mode, on, off) {
   /*
   don't like the default blinks? OK.
 
@@ -238,8 +234,7 @@ function setNetlightTiming(mode, on, off)
   }
 }
 
-function rejectMode(mode)
-{
+function rejectMode(mode) {
   /*
   do you want to answer incoming calls?
 
@@ -258,8 +253,7 @@ function rejectMode(mode)
     send('AT+GSMBUSY=' + mode + '\r\n');
 }
 
-function voiceCoding(mode)
-{
+function voiceCoding(mode) {
   /*
   Get/set voice coding type? Not toatally sure what these do...
 
@@ -293,8 +287,7 @@ function voiceCoding(mode)
     send('AT+SVR=' + mode + '\r\n');
 }
 
-function audioSwitch(mode)
-{
+function audioSwitch(mode) {
   /*
   control automatic audio channel switching
 
@@ -316,6 +309,16 @@ function audioSwitch(mode)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+var led1 = tessel.led(1).output().high();
+var led2 = tessel.led(2).output().low();
+
+
+setInterval(function () {
+  led1.toggle();
+  led2.toggle();
+}, 250);
+
+
 process.on('message', function (data) {
   // console.log(data.substring(1, data.length-1));
   send(data.substring(1, data.length - 1) + "\r\n");
@@ -323,20 +326,62 @@ process.on('message', function (data) {
 
 console.log('waiting for messages...');
 
+
+
+
+// original implementation is too fast... buffer doesn't build up on its own
+// uart.on('data', function(bytes) {
+//   printRecieved(bytes);
+// });
+
 uart.on('data', function(bytes) {
-  printRecieved(bytes);
+  for (var i = 0; i < bytes.length; i++)
+  {
+    var thing = decode([bytes[i]]);
+    // console.log([thing]);
+    if (thing == '\n' && previousCharacter == '\n')
+    {
+      //  new "packet"
+      // console.log(latestMessage);
+      printMessage(latestMessage);
+      messages.push(latestMessage);
+      latestMessage = '';
+    }
+    else
+    {
+      latestMessage += thing;
+    }
+
+    //  always update
+    previousCharacter = thing;
+  }
+
+  // bytes.forEach(function(thing)
+  // {
+  //   var decoded = decode([thing]);
+  //   console.log(decoded);
+  //   // if (decoded == '\n' )
+  // });
 });
+
+
+
+
 
 console.log('gogogo!');
 tessel.sleep(50);
-g3.low();
-tessel.sleep(1200);
-g3.high();
-tessel.sleep(3000);
+// g3.low();
+// tessel.sleep(1200);
+// g3.high();
+// tessel.sleep(3000);
 
 heyListen();
 
 tessel.sleep(100);
+
+// setTimeout(function () {
+//   SMS(15555555555, "test") 
+//   }, 25000);
 
 // setInterval(function(){
 //   send('AT+CMGR=1,1\r\n');
@@ -371,7 +416,7 @@ tessel.sleep(100);
 // tessel.sleep(2000);
 
 // characters = 'AT+CMGF=1\r\n'
-// send(characters);
+// send(characters);x
 // tessel.sleep(2000);
 
 // characters = 'AT+CMGS="15555555555"\r\n'
