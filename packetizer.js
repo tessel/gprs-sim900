@@ -16,8 +16,8 @@ function decode(array) {
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    if (array[i] < 14) // not technically always true, hence "selectively"
-      decoded += '\n';
+    if (array[i] == 10 || array[i] == 13) 
+      decoded += '\n';    // not technically true
     else
       decoded += String.fromCharCode(array[i]);
   }
@@ -25,7 +25,7 @@ function decode(array) {
 }
 
 
-function compareToEnder(message, incoming, ender) {
+function checkEnd(message, incoming, ender) {
   /*
   check to see if we're done with this packet
 
@@ -49,86 +49,50 @@ function compareToEnder(message, incoming, ender) {
 }
 
 
-function Packetizer(hardware, baud, ender) {
+function Packetizer(uart, ender) {
   /*
   packetize the incoming UART stream
 
   args
-    hardware
-      the Tessel port whose UART is being packetized
-    baud
-      baud rate of the UART
+    uart
+      the uart port being packetized
     ender
       charaters at the end of each packet. typically \r\n or similar.
 
   */
 
-  baud = baud || 19200;
-  ender = ender || '\r\n';
+  ender = ender || '\n\n';
 
   //  get yourself some messages
   this.messages = [];
 
   // Initialize UART
-  this.uart = hardware.UART({baudrate:baud});
+  this.uart = uart;
 
-  //  packetize
-  this.uart.on('data', function(bytes) {
-  for (var i = 0; i < bytes.length; i++)
-  {
-    var thing = decode([bytes[i]]);
-    // console.log([thing]);
-    if (thing == '\n' && previousCharacter == '\n')
-    {
-      //  new "packet"! do something with it
-      // console.log(latestMessage);
-      // printMessage(latestMessage);
-      // messages.push(latestMessage);
-      latestMessage = '';
-      previousCharacter = '';
-    }
-    else
-    {
-      latestMessage += thing;
-      previousCharacter = thing;
-    }
-  }
-});
-
+  return this;
 } 
 
-module.exports = packetizer;
+util.inherits(Packetizer, EventEmitter);
 
-
-/* original packetizer from gprs test code
-
-uart.on('data', function(bytes) {
-  for (var i = 0; i < bytes.length; i++)
-  {
-    var thing = decode([bytes[i]]);
-    // console.log([thing]);
-    if (thing == '\n' && previousCharacter == '\n')
+Packetizer.prototype.packetize = function() {
+  this.uart.on('data', function(bytes) {
+    for (var i = 0; i < bytes.length; i++)
     {
-      //  new "packet"
-      // console.log(latestMessage);
-      printMessage(latestMessage);
-      messages.push(latestMessage);
-      latestMessage = '';
+      var thing = decode([bytes[i]]);
+      if (thing == '\n' && previousCharacter == '\n') //  replace with checkEnd
+      {
+        this.emit('packet', latestMessage);
+        messages.push(latestMessage);
+        latestMessage = '';
+        previousCharacter = '';
+      }
+      else
+      {
+        latestMessage += thing;
+        previousCharacter = thing;
+      }
     }
-    else
-    {
-      latestMessage += thing;
-    }
+  });
+}
 
-    //  always update
-    previousCharacter = thing;
-  }
-
-  // bytes.forEach(function(thing)
-  // {
-  //   var decoded = decode([thing]);
-  //   console.log(decoded);
-  //   // if (decoded == '\n' )
-  // });
-});
-
+module.exports = Packetizer;

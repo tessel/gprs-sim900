@@ -18,7 +18,7 @@ function decode(array) {
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    if (array[i] < 14) // not technically always true
+    if (array[i] == 10 || array[i] == 13) // not technically true
       decoded += '\n';
     else
       decoded += String.fromCharCode(array[i]);
@@ -322,6 +322,18 @@ setInterval(function () {
 process.on('message', function (data) {
   // console.log(data.substring(1, data.length-1));
   send(data.substring(1, data.length - 1) + "\r\n");
+  if (data.length == 3)
+  {
+    setTimeout(function() {
+      g3.high();
+      setTimeout(function() {
+        g3.toggle();
+        setTimeout(function() {
+          g3.toggle();
+        }, 1000);
+      }, 1000);
+    }, 1);
+  }
 });
 
 console.log('waiting for messages...');
@@ -342,9 +354,13 @@ uart.on('data', function(bytes) {
     if (thing == '\n' && previousCharacter == '\n')
     {
       //  new "packet"
-      // console.log(latestMessage);
-      printMessage(latestMessage);
-      messages.push(latestMessage);
+      //  but we don't want 'empty' packets of just newlines 
+      if (latestMessage != previousCharacter) {
+        //  get rid of the newline
+        latestMessage = latestMessage.slice(0, latestMessage.length-1);
+        printMessage(latestMessage);
+        messages.push(latestMessage);
+      }
       latestMessage = '';
       previousCharacter = '';
     }
