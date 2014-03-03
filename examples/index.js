@@ -18,7 +18,7 @@ function decode(array) {
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    if (array[i] < 14) 
+    if (array[i] < 14) // not technically always true
       decoded += '\n';
     else
       decoded += String.fromCharCode(array[i]);
@@ -346,14 +346,13 @@ uart.on('data', function(bytes) {
       printMessage(latestMessage);
       messages.push(latestMessage);
       latestMessage = '';
+      previousCharacter = '';
     }
     else
     {
       latestMessage += thing;
+      previousCharacter = thing;
     }
-
-    //  always update
-    previousCharacter = thing;
   }
 
   // bytes.forEach(function(thing)
