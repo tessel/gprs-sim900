@@ -1,7 +1,7 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
-function gprs (hardware, secondaryHardware) {
+function GPRS (hardware, secondaryHardware) {
   /*
   constructor
 
@@ -9,7 +9,7 @@ function gprs (hardware, secondaryHardware) {
     hardware
       the tessel port to be used for priary communication
     secondaryHardware
-      the additional port that can be used for debug purposes
+      the additional port that can be used for debug purposes. not required. Typically, D/A will be primary, C/B will be secondary
 
   */
   var self = this;
@@ -19,18 +19,60 @@ function gprs (hardware, secondaryHardware) {
   self.power = hardware.gpio(3);
 
   self.debugHardware = null;
-  self.debugEnabled = false;
+  self.ringIndicator = null;
   if (arguments.length > 1) {
     self.debugHardware = secondaryHardware;
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
+    self.ringIndicator = secondaryHardware.gpio(3);
   }
+
+
 }
 
-util.inherits(gprs, EventEmitter)
+util.inherits(GPRS, EventEmitter)
+
+function txrx(uart, message, timeout, expected) {
+  /*
+  every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
+
+  args
+    uart
+      the uart object we're using to commuicate
+    message
+      the string you're sending
+    timeout
+      how long until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it
+    expected
 
 
+  */
+  uart.write(message);
 
-gprs.prototype.sendSMS = function(number, message, callback) {
+}
+
+GPRS.prototype._establishContact = function(callback) {
+  /*
+  make contact with the GPRS module, emit the 'ready' event
+
+  args
+    callback
+      callback function
+
+  callback parameters
+    none
+  */
+
+  var self = this;
+
+  self.uart.write('AT\r\n');
+
+  self.uart.once(function (data)
+  {
+
+  });
+};
+
+GPRS.prototype.sendSMS = function(number, message, callback) {
   /*
   send an SMS to the specified number
 
@@ -47,9 +89,13 @@ gprs.prototype.sendSMS = function(number, message, callback) {
   */
 
   var self = this;
+
+  number = String(number) || '15555555555';
+  message = message || 'text from a Tessel';
+
 }
 
-gprs.prototype.dial = function(number, callback) {
+GPRS.prototype.dial = function(number, callback) {
   /*
   call the specified number
 
@@ -67,7 +113,7 @@ gprs.prototype.dial = function(number, callback) {
   var self = this;
 }
 
-gprs.prototype.answerCall = function(callback) {
+GPRS.prototype.answerCall = function(callback) {
   /*
   answer an incoming voice call
 
@@ -83,7 +129,7 @@ gprs.prototype.answerCall = function(callback) {
   var self = this;
 }
 
-gprs.prototype.ignoreCall = function(callback) {
+GPRS.prototype.ignoreCall = function(callback) {
   /*
   ignore an incoming voice call
 
@@ -98,7 +144,7 @@ gprs.prototype.ignoreCall = function(callback) {
   var self = this;
 }
 
-gprs.prototype.readSMS = function(messageNumber, callback) {
+GPRS.prototype.readSMS = function(messageNumber, callback) {
   /*
   answer an incoming voice call
 
