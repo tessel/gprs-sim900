@@ -24,7 +24,6 @@ function decode(array) {
   return decoded; 
 }
 
-
 function checkEnd(message, incoming, ender) {
   /*
   check to see if we're done with this packet
@@ -47,7 +46,6 @@ function checkEnd(message, incoming, ender) {
   // the fast way:
   return (message + incoming).slice(message.length - ender.length + 1) === ender;
 }
-
 
 function Packetizer(uart, ender) {
   /*
