@@ -1,4 +1,3 @@
-var tessel = require('tessel');
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
