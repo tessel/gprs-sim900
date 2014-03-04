@@ -60,7 +60,7 @@ function Packetizer(uart, ender) {
       charaters at the end of each packet. typically \r\n or similar.
   */
 
-  this.ender = ender || '\n\n';
+  this.ender = ender || '\n';
 
   //  get yourself some messages
   this.messages = [];
