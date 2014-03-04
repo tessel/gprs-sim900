@@ -1,5 +1,6 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
+var Packetizer = require('./packetizer.js');
 
 function GPRS (hardware, secondaryHardware) {
   /*
@@ -18,6 +19,9 @@ function GPRS (hardware, secondaryHardware) {
   self.uart = new hardware.UART({baudrate: 19200});
   self.power = hardware.gpio(3);
 
+  self.packetizer = new Packetizer(uart);
+  self.packetizer.packetize();
+
   self.debugHardware = null;
   self.ringIndicator = null;
   if (arguments.length > 1) {
@@ -25,28 +29,35 @@ function GPRS (hardware, secondaryHardware) {
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
     self.ringIndicator = secondaryHardware.gpio(3);
   }
-
-
 }
 
 util.inherits(GPRS, EventEmitter)
 
-function txrx(uart, message, timeout, expected) {
+GPRS.prototype.txrx = function(message, timeout, options, callback) {
   /*
   every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
 
   args
-    uart
-      the uart object we're using to commuicate
     message
-      the string you're sending
+      an array of the strings you're sending, ie ['AT', 'AT+CNETSCAN']
     timeout
-      how long until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it
-    expected
-
-
+      milliseconds until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it
+    options
+      expected length of response (in packets) or the contents of the expected end packet, ie 4 or ['OK']
+    callback
+      callback function
+    
+  callback parameters
+    response
+      the text recieved as per options
   */
-  uart.write(message);
+  
+  //  just to be clear
+  var self = this;
+  
+  self.uart.write(message + '\r\n');
+    
+
 
 }
 
@@ -66,7 +77,7 @@ GPRS.prototype._establishContact = function(callback) {
 
   self.uart.write('AT\r\n');
 
-  self.uart.once(function (data)
+  self.packetizer.once(function (pa)
   {
 
   });
