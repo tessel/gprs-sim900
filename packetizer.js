@@ -45,7 +45,7 @@ function checkEnd(message, incoming, ender) {
   // return (message + incoming).indexOf(ender) != -1;
 
   // the fast way:
-  return (message + incoming).slice(message.length - ender.length) === ender;
+  return (message + incoming).slice(message.length - ender.length + 1) === ender;
 }
 
 
@@ -58,38 +58,42 @@ function Packetizer(uart, ender) {
       the uart port being packetized
     ender
       charaters at the end of each packet. typically \r\n or similar.
-
   */
 
-  ender = ender || '\n\n';
+  this.ender = ender || '\n\n';
 
   //  get yourself some messages
   this.messages = [];
+  this.previousCharacter = '';
+  this.latestMessage = '';
 
   // Initialize UART
   this.uart = uart;
-
-  return this;
 } 
 
 util.inherits(Packetizer, EventEmitter);
 
 Packetizer.prototype.packetize = function() {
+  var self = this;
   this.uart.on('data', function(bytes) {
     for (var i = 0; i < bytes.length; i++)
     {
       var thing = decode([bytes[i]]);
-      if (thing == '\n' && previousCharacter == '\n') //  replace with checkEnd
+      if (checkEnd(self.latestMessage, thing, self.ender))
       {
-        this.emit('packet', latestMessage);
-        messages.push(latestMessage);
-        latestMessage = '';
-        previousCharacter = '';
+        if (!/^\s*$/.test(self.latestMessage + thing))
+        {
+          //  we don't want "empty" packets 
+          self.emit('packet', self.latestMessage)
+          self.messages.push(self.latestMessage);
+        }
+        self.latestMessage = '';
+        self.previousCharacter = '';
       }
       else
       {
-        latestMessage += thing;
-        previousCharacter = thing;
+        self.latestMessage += thing;
+        self.previousCharacter = thing;
       }
     }
   });
