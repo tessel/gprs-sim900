@@ -64,6 +64,8 @@ function Packetizer(uart, ender, blacklist) {
 
   //  get yourself some messages
   this.messages = [];
+  this.packetNumber = 0;
+  this.maxBufferSize = 10;
   this.previousCharacter = '';
   this.latestMessage = '';
 
@@ -72,6 +74,44 @@ function Packetizer(uart, ender, blacklist) {
 } 
 
 util.inherits(Packetizer, EventEmitter);
+
+Packetizer.prototype.bufferSize = function(len) {
+  /*
+  get/set the buffer size
+
+  args
+    len
+      the desired max buffer size. leave empty to get the current size
+
+  returns
+    the size of the buffer after changes, if any
+  */
+
+  if (arguments.length > 0) {
+    this.maxBufferSize = len;
+  }
+  return this.maxBufferSize;
+};
+
+Packetizer.prototype.getLatestPackets = function(num) {
+  /*
+  get the most recent num packets
+
+  args
+    num
+      how many packets? coerced to be <= the buffer size
+
+  returns
+    packets
+      an array of the last num packets
+  */
+
+  var packets = [];
+  for (var i = 0; i < Math.min(num, this.maxBufferSize, this.messages.length), i++) {
+    packets.push(this.messages[i]);
+  }
+  return packets;
+}
 
 Packetizer.prototype.checkBlacklist = function(data) {
   /*
@@ -105,6 +145,10 @@ Packetizer.prototype.packetize = function() {
           //  we don't want "empty" or blacklisted packets
           self.emit('packet', self.latestMessage)
           self.messages.push(self.latestMessage);
+          self.packetNumber++;
+          if (self.packetNumber > self.maxBufferSize) {
+            self.emit('overflow', self.messages.shift());
+          }
         }
         if (self.checkBlacklist(self.latestMessage))
         {
