@@ -36,32 +36,36 @@ function GPRS (hardware, secondaryHardware) {
 
 util.inherits(GPRS, EventEmitter)
 
-GPRS.prototype.txrx = function(message, timeout, options, callback) {
+GPRS.prototype.myListener = function() {
+  this.packetizer.on('packet')
+}
+
+GPRS.prototype.txrx = function(message, patience, callback) {
   /*
   every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
 
   args
     message
       an array of the strings you're sending, ie ['AT', 'AT+CNETSCAN']
-    timeout
-      milliseconds until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it
-    options
-      expected length of response (in packets) or the contents of the expected end packet, ie 4 or ['OK']
+    patience
+      milliseconds until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it.
     callback
       callback function
     
   callback parameters
     response
-      the text recieved as per options
+      the text recieved
   */
   
-  //  just to be clear
   var self = this;
-  
+  var response = '';
+  //  it's a virtue, but mostly it won't work if you're impatient
+  patience = max(patience, 100);
+
   self.uart.write(message + '\r\n');
-    
+  setTimeout( function() {
 
-
+  }, patience);
 }
 
 GPRS.prototype._establishContact = function(callback) {

@@ -5,7 +5,7 @@ var EventEmitter = require('events').EventEmitter;
 
 function decode(array) {
   /*
-  selectively convert the given array/buffer of bytes to their ASCII representation
+  convert the given array/buffer of bytes to its ASCII representation
 
   args
     array
@@ -105,6 +105,11 @@ Packetizer.prototype.packetize = function() {
           //  we don't want "empty" or blacklisted packets
           self.emit('packet', self.latestMessage)
           self.messages.push(self.latestMessage);
+        }
+        if (self.checkBlacklist(self.latestMessage))
+        {
+          //  sometimes we may want to know
+          self.emit('blacklist', self.latestMessage);
         }
         self.latestMessage = '';
         self.previousCharacter = '';
