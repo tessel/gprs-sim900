@@ -5,7 +5,7 @@ var EventEmitter = require('events').EventEmitter;
 
 function decode(array) {
   /*
-  selectively convert the given array/buffer of numbers to their ASCII representation
+  selectively convert the given array/buffer of bytes to their ASCII representation
 
   args
     array

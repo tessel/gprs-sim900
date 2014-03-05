@@ -18,16 +18,19 @@ function GPRS (hardware, secondaryHardware) {
   self.hardware = hardware;
   self.uart = new hardware.UART({baudrate: 19200});
   self.power = hardware.gpio(3);
-
-  self.packetizer = new Packetizer(uart);
+  self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
 
+  //  second debug port is optional and largely unnecessary
   self.debugHardware = null;
+  //  ring indicator can be useful, though
   self.ringIndicator = null;
   if (arguments.length > 1) {
     self.debugHardware = secondaryHardware;
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
     self.ringIndicator = secondaryHardware.gpio(3);
+    self.debugPacketizer = new Packetizer(self.debugUART);
+    self.debugPacketizer.packetize();
   }
 }
 
@@ -75,12 +78,30 @@ GPRS.prototype._establishContact = function(callback) {
 
   var self = this;
 
-  self.uart.write('AT\r\n');
-
-  self.packetizer.once(function (pa)
+  var stage = 1;
+  var contacted = false;
+  for (var i = 0; i < 5; i++)
   {
+    self.uart.write('AT\r\n');
+    var firstTry = self.packetizer.once(function (reply)
+    {
+      if (reply == 'AT')
+      {
+        stage++;
+        self.packetizer.once(function (reply) {
+          if (reply == 'OK')
+          {
+            stage++;
+          }
+        });
+      }
+    });
+    setTimeout(function() {
 
-  });
+    }, )
+  }
+
+  
 };
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
