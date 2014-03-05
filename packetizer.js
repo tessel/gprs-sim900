@@ -91,7 +91,7 @@ Packetizer.prototype.bufferSize = function(len) {
     this.maxBufferSize = len;
   }
   return this.maxBufferSize;
-};
+}
 
 Packetizer.prototype.getLatestPackets = function(num) {
   /*
