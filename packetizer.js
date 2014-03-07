@@ -75,6 +75,10 @@ function Packetizer(uart, ender, blacklist) {
 
 util.inherits(Packetizer, EventEmitter);
 
+Packetizer.prototype.getPacketCount = function() {
+  return this.packetNumber;
+}
+
 Packetizer.prototype.bufferSize = function(len) {
   /*
   get/set the buffer size
@@ -126,9 +130,10 @@ Packetizer.prototype.checkBlacklist = function(data) {
   */
 
   // console.log('--> checking', data, 'against blacklist...')
-  return this.blacklist.some(function(item) {
-    return item == data;
-  });
+  // return this.blacklist.some(function(item) {
+  //   return item == data;
+  // });
+  return (this.blacklist.indexOf(data) > -1);
 }
 
 Packetizer.prototype.packetize = function() {

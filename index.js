@@ -11,7 +11,6 @@ function GPRS (hardware, secondaryHardware) {
       the tessel port to be used for priary communication
     secondaryHardware
       the additional port that can be used for debug purposes. not required. Typically, D/A will be primary, C/B will be secondary
-
   */
   var self = this;
 
@@ -32,6 +31,8 @@ function GPRS (hardware, secondaryHardware) {
     self.debugPacketizer = new Packetizer(self.debugUART);
     self.debugPacketizer.packetize();
   }
+
+  self._establishContact();
 }
 
 util.inherits(GPRS, EventEmitter)
@@ -46,25 +47,44 @@ GPRS.prototype.txrx = function(message, patience, callback) {
 
   args
     message
-      an array of the strings you're sending, ie ['AT', 'AT+CNETSCAN']
+      string you're sending, ie 'AT'
     patience
       milliseconds until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it.
     callback
       callback function
     
   callback parameters
-    response
-      the text recieved
+    recieved
+      the first packet recieved during the interval
   */
   
   var self = this;
-  var response = '';
-  //  it's a virtue, but mostly it won't work if you're impatient
-  patience = max(patience, 100);
 
-  self.uart.write(message + '\r\n');
-  setTimeout( function() {
+  message = (message || 'AT') + '\r\n';
+  patience = patience || 250;
+  callback = callback || ( function(err, response) { return response; } );
+  //  it's a virtue, but mostly the module won't work if you're impatient
+  patience = Math.max(patience, 100);
+  var myError = null;
 
+  //  send if there's anything to send
+  if (arguments.length) {
+    self.uart.write(message);
+  }
+
+  //  if we get something
+  function success = function(response) {
+    //  clear the kill
+    clearTimeout(myImpatience);
+    callback(myError, response);
+  }
+  self.packetizer.once('packet', success(response));
+
+  //  if we time out and don't get anything then we thrown an error
+  var myImpatience = setTimeout( function() {
+    self.packetizer.removeListener('packet', success);
+    myError = new Error('no response within timeout of' + patience + 'ms');
+    return callback(myError);
   }, patience);
 }
 
