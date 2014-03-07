@@ -111,7 +111,7 @@ Packetizer.prototype.getLatestPackets = function(num) {
   */
 
   var packets = [];
-  for (var i = 0; i < Math.min(num, this.maxBufferSize, this.messages.length), i++) {
+  for (var i = 0; i < Math.min(num, this.maxBufferSize, this.messages.length); i++) {
     packets.push(this.messages[i]);
   }
   return packets;
@@ -149,6 +149,7 @@ Packetizer.prototype.packetize = function() {
         {
           //  we don't want "empty" or blacklisted packets
           self.emit('packet', self.latestMessage)
+          // console.log('--> emitting',  self.latestMessage);
           self.messages.push(self.latestMessage);
           self.packetNumber++;
           if (self.packetNumber > self.maxBufferSize) {

@@ -41,6 +41,20 @@ GPRS.prototype.myListener = function() {
   this.packetizer.on('packet')
 }
 
+function postmaster(myPacketizer) {
+  /*
+  something to handle and distribute packets
+  
+  args
+    myPacketizer
+      a packetizer object whose packets need distribution
+  */
+
+  this.pcktzr = myPacketizer;
+
+
+}
+
 GPRS.prototype.txrx = function(message, patience, callback) {
   /*
   every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
@@ -67,25 +81,25 @@ GPRS.prototype.txrx = function(message, patience, callback) {
   patience = Math.max(patience, 100);
   var myError = null;
 
-  //  send if there's anything to send
-  if (arguments.length) {
-    self.uart.write(message);
-  }
+  // //  send if there's anything to send
+  // if (arguments.length) {
+  //   self.uart.write(message);
+  // }
 
-  //  if we get something
-  function success = function(response) {
-    //  clear the kill
-    clearTimeout(myImpatience);
-    callback(myError, response);
-  }
-  self.packetizer.once('packet', success(response));
+  // //  if we get something
+  // var success = function(response) {
+  //   //  clear the kill
+  //   clearTimeout(myImpatience);
+  //   callback(myError, response);
+  // }
+  // self.packetizer.once('packet', success(response));
 
-  //  if we time out and don't get anything then we thrown an error
-  var myImpatience = setTimeout( function() {
-    self.packetizer.removeListener('packet', success);
-    myError = new Error('no response within timeout of' + patience + 'ms');
-    return callback(myError);
-  }, patience);
+  // //  if we time out and don't get anything then we thrown an error
+  // var myImpatience = setTimeout( function() {
+  //   self.packetizer.removeListener('packet', success);
+  //   myError = new Error('no response within timeout of' + patience + 'ms');
+  //   return callback(myError);
+  // }, patience);
 }
 
 GPRS.prototype._establishContact = function(callback) {
@@ -120,9 +134,9 @@ GPRS.prototype._establishContact = function(callback) {
         });
       }
     });
-    setTimeout(function() {
-
-    }, )
+    // setTimeout(function() {
+    //   ;
+    // }, );
   }
 
   
