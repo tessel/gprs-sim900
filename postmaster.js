@@ -15,8 +15,20 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.callback = null;
   
   this.enders = enders || ['OK', 'ERROR'];
-  overflow = overflow || console.log;
-  unsolicited = unsolicited || console.log;
+  overflow = overflow || function(err, arg) { 
+    if (err) {
+      console.log('err: ', err);
+    }
+    else {
+      console.log('overflow!\n', arg);
+    };
+  unsolicited = unsolicited || function(err, arg) { 
+    if (err) {
+      console.log('err: ', err);
+    }
+    else {
+      console.log('unsolicited:\t', arg);
+    };
   size = size || 15;
 
   var self = this;
