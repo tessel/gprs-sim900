@@ -54,7 +54,7 @@ function send(cmd, verbose) {
 
 function SMS(number, message) {
   number = String(number) || '15555555555';   //  sorry, not sorry, Jia
-  message = message || 'text from a Tessel';
+  message = message || 'Where is my pie?';
 
   setTimeout(function(){
     send('AT\r\n');
@@ -394,9 +394,9 @@ heyListen();
 
 tessel.sleep(100);
 
-// setTimeout(function () {
-//   SMS(15555555555, "test") 
-//   }, 25000);
+setTimeout(function () {
+  SMS() 
+  }, 25000);
 
 // setInterval(function(){
 //   send('AT+CMGR=1,1\r\n');
