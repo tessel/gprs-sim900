@@ -13,6 +13,8 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.uart = myPacketizer.uart;
   this.RXQueue = [];
   this.callback = null;
+  this.message = '';
+  var started = false;
   
   this.enders = enders || ['OK', 'ERROR'];
   overflow = overflow || function(err, arg) { 
@@ -22,13 +24,15 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
     else {
       console.log('overflow!\n', arg);
     };
+  }
   unsolicited = unsolicited || function(err, arg) { 
     if (err) {
-      console.log('err: ', err);
+      console.log('err:\n', err);
     }
     else {
-      console.log('unsolicited:\t', arg);
+      console.log('unsolicited:\n', arg);
     };
+  }
   size = size || 15;
 
   var self = this;
@@ -39,18 +43,26 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
     if (self.callback === null) {
       self.emit('unsolicited', null, data);
     }
-    else {
+    //  if we are busy but the first part of the reply doesn't match the message
+    else if (data != self.message && !started) {
+      self.emit('unsolicited', null, data);
+    }
+    else if (started || data === self.message) {
+      started = true;
       self.RXQueue.push(data);
     }
 
     if (self.enders.indexOf(data) > -1) {
       var temp = self.RXQueue;
       self.RXQueue = [];
+      started = false;
       self.emit('post', null, temp);
     }
     if (self.RXQueue.length > size) {
       self.emit('overflow', null, self.RXQueue);
       self.RXQueue = [];
+      started = false;
+      self.message = '';
     }
   });
 
@@ -82,13 +94,14 @@ Postmaster.prototype.send = function (message, callback, patience) {
   var self = this;
 
   if (self.callback != null) {
-    self.callback(new Error('Postmaster busy'), []);
+    callback(new Error('Postmaster busy'), []);
   }
   else {
     //  set things up
     self.callback = callback;
     patience = patience || 10000;
     
+    self.message = message;
     self.uart.write(message + '\r\n');
 
     var reply = function(err, reply) {
