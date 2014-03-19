@@ -17,7 +17,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   */
   var self = this;
 
-  baud = baud || 115200;
+  baud = baud || 9600;
 
   self.hardware = hardware;
   self.uart = new hardware.UART({baudrate: baud});
@@ -109,12 +109,15 @@ GPRS.prototype.togglePower = function() {
   /*
   turn the module on or off by switching the power buton (G3) electronically
   */
+  var self = this;
   self.power.high();
   setTimeout(function() {
     self.power.low();
     setTimeout(function() {
       self.power.high();
-      self.emit('powertoggled');
+      setTimeout(function() {
+        self.emit('powertoggled');
+      }, 1000);
     }, 1000);
   }, 1000);
 }
@@ -147,6 +150,7 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
     //  too many tries = fail
 
     if (rep > reps) {
+      console.log('FAILED TO CONNECT TO MODULE');
       callback(err, false);
     }
     //  if we timeout on an AT, we're probably powered off. toggle the power button and try again
