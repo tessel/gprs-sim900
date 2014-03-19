@@ -31,7 +31,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   // self.debugHardware = null;
   //  ring indicator can be useful, though
   // self.ringIndicator = null;
-  // console.log(arguments);
+  // console.log('sech:\t', secondaryHardware);
   if (secondaryHardware) {//arguments.length > 2) {
     self.debugHardware = secondaryHardware;
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
@@ -43,7 +43,7 @@ function GPRS (hardware, secondaryHardware, baud) {
 
 util.inherits(GPRS, EventEmitter)
 
-function use(hardware, debug, callback) {
+function use(hardware, debug, baud, callback) {
   /*
   connect the gprs module and establish contact, then call the callback
 
@@ -52,6 +52,8 @@ function use(hardware, debug, callback) {
       the tessel port to use for the main GPRS hardware
     debug
       the debug port, if any, to use (null most of the time)
+    baud
+      alternate baud rate for the UART
     callback
       what to call once you're connected to the module
 
@@ -61,7 +63,7 @@ function use(hardware, debug, callback) {
       contacted
         did we establish contact or not? t/f
   */
-  var radio = new GPRS(hardware, debug);
+  var radio = new GPRS(hardware, debug, baud);
   radio.establishContact(callback);
   return radio;
 }
@@ -87,7 +89,7 @@ GPRS.prototype.txrx = function(message, patience, callback) {
   
   var self = this;
 
-  message = (message || 'AT') + '\r\n';
+  message  = message  || 'AT';
   patience = patience || 250;
   callback = callback || ( function(err, arg) { 
     if (err) {
@@ -143,6 +145,7 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   //  457 is pseudorandom...and unlikely to be used elsewhere
   self.postmaster.send('AT', 457, function(err, data) {
     //  too many tries = fail
+
     if (rep > reps) {
       callback(err, false);
     }
@@ -154,9 +157,11 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       })
     }
     //this is where we want to be
-    else if (data === ['AT', 'OK']) {
+    else if (data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
       self.emit('ready');
-      callback(null, true);
+      if (callback) {
+        callback(null, true);
+      }
     }
   });
 }
