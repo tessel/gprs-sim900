@@ -3,7 +3,7 @@ var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
 
-function GPRS (hardware, secondaryHardware) {
+function GPRS (hardware, secondaryHardware, baud) {
   /*
   constructor
 
@@ -12,11 +12,15 @@ function GPRS (hardware, secondaryHardware) {
       the tessel port to be used for priary communication
     secondaryHardware
       the additional port that can be used for debug purposes. not required. Typically, D/A will be primary, C/B will be secondary
+    baud
+      override the defualt baud rate of 115200 if necessary (for software UART)
   */
   var self = this;
 
+  baud = baud || 115200;
+
   self.hardware = hardware;
-  self.uart = new hardware.UART({baudrate: 19200});
+  self.uart = new hardware.UART({baudrate: baud});
   self.power = hardware.gpio(3);
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
@@ -24,21 +28,43 @@ function GPRS (hardware, secondaryHardware) {
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR']);
 
   //  second debug port is optional and largely unnecessary
-  self.debugHardware = null;
+  // self.debugHardware = null;
   //  ring indicator can be useful, though
-  self.ringIndicator = null;
-  if (arguments.length > 1) {
+  // self.ringIndicator = null;
+  // console.log(arguments);
+  if (secondaryHardware) {//arguments.length > 2) {
     self.debugHardware = secondaryHardware;
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
     self.ringIndicator = secondaryHardware.gpio(3);
     self.debugPacketizer = new Packetizer(self.debugUART);
     self.debugPacketizer.packetize();
   }
-
-  self._establishContact();
 }
 
 util.inherits(GPRS, EventEmitter)
+
+function use(hardware, debug, callback) {
+  /*
+  connect the gprs module and establish contact, then call the callback
+
+  args
+    hardware
+      the tessel port to use for the main GPRS hardware
+    debug
+      the debug port, if any, to use (null most of the time)
+    callback
+      what to call once you're connected to the module
+
+    callback parameters
+      err
+        error, if any, while connecting
+      contacted
+        did we establish contact or not? t/f
+  */
+  var radio = new GPRS(hardware, debug);
+  radio.establishContact(callback);
+  return radio;
+}
 
 GPRS.prototype.txrx = function(message, patience, callback) {
   /*
@@ -77,13 +103,31 @@ GPRS.prototype.txrx = function(message, patience, callback) {
   self.postmaster.send(message, patience, callback);
 }
 
-GPRS.prototype._establishContact = function(callback) {
+GPRS.prototype.togglePower = function() {
+  /*
+  turn the module on or off by switching the power buton (G3) electronically
+  */
+  self.power.high();
+  setTimeout(function() {
+    self.power.low();
+    setTimeout(function() {
+      self.power.high();
+      self.emit('powertoggled');
+    }, 1000);
+  }, 1000);
+}
+
+GPRS.prototype.establishContact = function(callback, rep, reps) {
   /*
   make contact with the GPRS module, emit the 'ready' event
 
   args
     callback
       callback function
+    rep
+      how many times ahve we tried?
+    reps
+      how many times until we give up
 
   callback parameters
     err
@@ -93,34 +137,29 @@ GPRS.prototype._establishContact = function(callback) {
   */
 
   var self = this;
-
-  var pings = 0;
-  var timeouts = 0;
-  var contacted = false;
+  rep = rep || 0;
+  reps = reps || 2;
 
   //  457 is pseudorandom...and unlikely to be used elsewhere
   self.postmaster.send('AT', 457, function(err, data) {
-    if (err && err.message === 'no reply after 457 ms to message "AT"') {
-      //  if we timeout on an AT, we're probably off. toggle the power button
-      self.power.high();
-      setTimeout(function() {
-        self.power.low();
-        setTimeout(function() {
-          self.power.high();
-        }, 1000);
-      }, 1000);
+    //  too many tries = fail
+    if (rep > reps) {
+      callback(err, false);
+    }
+    //  if we timeout on an AT, we're probably powered off. toggle the power button and try again
+    if (err) {// && err.message === 'no reply after 457 ms to message "AT"') {
+      self.togglePower();
+      self.once('powertoggled', function() {
+        self.establishContact(callback, rep++, reps);
+      })
     }
     //this is where we want to be
     else if (data === ['AT', 'OK']) {
+      self.emit('ready');
       callback(null, true);
-    }
-    else {
-      callback(err, false);
     }
   });
 }
-
-  
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
   /*
@@ -142,7 +181,6 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 
   number = String(number) || '15555555555';
   message = message || 'text from a Tessel';
-
 }
 
 GPRS.prototype.dial = function(number, callback) {
@@ -213,3 +251,13 @@ GPRS.prototype.readSMS = function(messageNumber, callback) {
 
   var self = this;
 }
+
+module.exports.GPRS = GPRS;
+module.exports.use = use;
+module.exports.txrx = txrx;
+module.exports.establishContact = establishContact;
+module.exports.sendSMS = sendSMS;
+module.exports.dial = dial;
+module.exports.answerCall = answerCall;
+module.exports.ignoreCall = ignoreCall;
+module.exports.readSMS = readSMS;
