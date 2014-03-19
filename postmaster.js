@@ -9,6 +9,21 @@ var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 
 function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
+  /*
+  constructor for the postmaster
+
+  args
+    myPacketizer
+      a packetizer to listen to
+    enders
+      an array of strings that constitute the end of a post
+    unsolicited
+      a callback function to call when an unsolicited packet comes in. callback args are err and data
+    overflow
+      a callback function to call when the message buffer overflows. callback args are err and data
+    size
+      size (in packets) of the buffer
+  */
   this.packetizer = myPacketizer;
   this.uart = myPacketizer.uart;
   this.RXQueue = [];
@@ -39,25 +54,22 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   
   //  when we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
-    //  if we aren't busy, it's unsolicited
-    if (self.callback === null) {
-      self.emit('unsolicited', null, data);
-    }
-    //  if we are busy but the first part of the reply doesn't match the message
-    else if (data != self.message && !started) {
+    //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
+    if (self.callback === null || (data != self.message && !started)) {
       self.emit('unsolicited', null, data);
     }
     else if (started || data === self.message) {
       started = true;
       self.RXQueue.push(data);
     }
-
+    //  check to see of we've finished the post
     if (self.enders.indexOf(data) > -1) {
       var temp = self.RXQueue;
       self.RXQueue = [];
       started = false;
       self.emit('post', null, temp);
     }
+    //  check overflow
     if (self.RXQueue.length > size) {
       self.emit('overflow', null, self.RXQueue);
       self.RXQueue = [];
@@ -72,7 +84,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
 
 util.inherits(Postmaster, EventEmitter);
 
-Postmaster.prototype.send = function (message, callback, patience) {
+Postmaster.prototype.send = function (message, patience, callback, debug) {
   /*
   send a message and add its callback to the queue. nite that the callback is deferred considerably...
   
@@ -83,6 +95,8 @@ Postmaster.prototype.send = function (message, callback, patience) {
       the callback function to call with the resulting data
     patience
       ms to wait before returning with an error
+    debug
+      debug flag
       
   callback parameters
     err
@@ -92,6 +106,7 @@ Postmaster.prototype.send = function (message, callback, patience) {
   */
 
   var self = this;
+  debug = debug || false;
 
   if (self.callback != null) {
     callback(new Error('Postmaster busy'), []);
@@ -103,6 +118,9 @@ Postmaster.prototype.send = function (message, callback, patience) {
     
     self.message = message;
     self.uart.write(message + '\r\n');
+    if (debug) {
+      console.log('sent', [message], 'on uart', [uart]);
+    }
 
     var reply = function(err, reply) {
       if (self.callback) {

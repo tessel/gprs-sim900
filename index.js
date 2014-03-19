@@ -1,6 +1,7 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
+var Postmaster = require('./postmaster.js');
 
 function GPRS (hardware, secondaryHardware) {
   /*
@@ -19,6 +20,8 @@ function GPRS (hardware, secondaryHardware) {
   self.power = hardware.gpio(3);
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
+  //  the defaults are fine for most of Postmaster's args
+  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR']);
 
   //  second debug port is optional and largely unnecessary
   self.debugHardware = null;
@@ -37,23 +40,6 @@ function GPRS (hardware, secondaryHardware) {
 
 util.inherits(GPRS, EventEmitter)
 
-GPRS.prototype.myListener = function() {
-  this.packetizer.on('packet')
-}
-
-function postmaster(myPacketizer) {
-  /*
-  something to handle and distribute packets
-  
-  args
-    myPacketizer
-      a packetizer object whose packets need distribution
-  */
-
-  this.pcktzr = myPacketizer;
-
-
-}
 
 GPRS.prototype.txrx = function(message, patience, callback) {
   /*
@@ -76,10 +62,19 @@ GPRS.prototype.txrx = function(message, patience, callback) {
 
   message = (message || 'AT') + '\r\n';
   patience = patience || 250;
-  callback = callback || ( function(err, response) { return response; } );
+  callback = callback || ( function(err, arg) { 
+    if (err) {
+      console.log('err:\n', err);
+    }
+    else {
+      console.log('reply:\n', arg);
+    };
+  });
   //  it's a virtue, but mostly the module won't work if you're impatient
   patience = Math.max(patience, 100);
   var myError = null;
+
+  self.postmaster.send(message, patience, callback);
 
   // //  send if there's anything to send
   // if (arguments.length) {
