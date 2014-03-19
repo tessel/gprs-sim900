@@ -136,94 +136,10 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
     //  if we time out
     setTimeout(function() {
       self.removeListener('post', reply);
-      reply(new Error('no reply after ' + patience + ' ms'), []);
+      reply(new Error('no reply after ' + patience + ' ms to message "' + message + '"'), []);
     }, patience);
   }
 }
-
-
-
-
-    // if (this.messageQueue.length == 0) {
-    // var message = messageQueue[0].message;
-    // var func = messageQueue[0].func;
-    // //  if we weren't already packing, check to see if we should be
-    // else if (!this.pack && data.indexOf(message.slice(0, message.lastIndexOf('_'))) > -1) {
-    //     this.pack = true;
-    //   }
-    // // if we aren't building a packet, then the message was unsolicited.
-    // else if (!this.pack) {
-    //   this.emit('unsolicited', data);
-    // }
-    // //  otherwise, we're packing!
-    // else {
-    //   //  add the message to the back of the queue
-    //   self.RXQueue.push(data);
-
-    //   //  check to see if we're done
-    //   if (this.enders.indexOf(data) > -1) {
-    //     var temp = this.RXQueue;
-    //     this.RXQueue = [];
-    //     // var func = functionQueue.shift();
-    //     this.emit(this.messageQueue.shift(), temp);
-    //   }
-    
-
-    //   //  loop through each sent message to see if we have a match
-    //   for (var i = 0; i < messageQueue.length; i++) {
-    //     var message = this.messageQueue[i];
-    //     var func = this.functionQueue[i];
-    //     var content = this.RXQueue.shift();
-
-    //     //  if we match the message, we need to start building a packet
-    //     if (!this.pack && data.indexOf(message.slice(0, message.indexOf('_'))) > -1) {
-    //       this.pack = true;
-    //       this.parcels.message = [];
-    //     }
-    //     if (this.pack) {
-    //       this.parcels.message.push(this.RXQueue.shift())
-    //     }
-    //   }
-    // }
-
-
-    // self.messageQueue.forEach(function(message) {
-    //   var pack = false;
-    //   var parcel = [];
-    //   //  loop through the recieved data
-
-    //   while(RXQueue.length) {
-    //     // if we have RX data, we are either packing a parcel or have an unsolicited message
-
-    //     //  if the message is in the recieved data, we're staring a new parcel
-    //     if (rx.indexOf(message.slice(0,message.indexOf('_'))) > -1) {
-    //       pack = true;
-    //     }
-    //     //  if we're not packing a parcel, then the message was unsolicited and it was also the last one pushed on. emit it and break.
-    //     else if (!pack) {
-    //       this.emit('unsolicited', RXQueue.pop());
-    //       break;
-    //     }
-    //     if (pack) {
-    //       var widget = RXQueue.shift();
-    //       parcel.push(widget);
-    //       if (widget.indexOf('OK') > -1 || widget.indexOf('ERROR') > -1) {
-    //         //  we're done
-    //         this.emit(message, )
-    //         break;
-    //       }
-    //     }
-    //   }
-
-
-      // self.RXQueue.forEach(function(rx) {
-      //   //  if we're packing a message or the original message is in the recieved data, then we're packing 
-      //   if (pack || rx.indexOf(message.slice(0,message.indexOf('_'))) > -1) {
-      //     pack = true;
-      //     //  if we;re building, then we add the popped message to the parcel
-      //   }
-      // });
-    // });
 
 
 module.exports = Postmaster;

@@ -40,7 +40,6 @@ function GPRS (hardware, secondaryHardware) {
 
 util.inherits(GPRS, EventEmitter)
 
-
 GPRS.prototype.txrx = function(message, patience, callback) {
   /*
   every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
@@ -54,8 +53,10 @@ GPRS.prototype.txrx = function(message, patience, callback) {
       callback function
     
   callback parameters
+    err
+      error object
     recieved
-      the first packet recieved during the interval
+      the reply recieved within the interval
   */
   
   var self = this;
@@ -72,29 +73,8 @@ GPRS.prototype.txrx = function(message, patience, callback) {
   });
   //  it's a virtue, but mostly the module won't work if you're impatient
   patience = Math.max(patience, 100);
-  var myError = null;
 
   self.postmaster.send(message, patience, callback);
-
-  // //  send if there's anything to send
-  // if (arguments.length) {
-  //   self.uart.write(message);
-  // }
-
-  // //  if we get something
-  // var success = function(response) {
-  //   //  clear the kill
-  //   clearTimeout(myImpatience);
-  //   callback(myError, response);
-  // }
-  // self.packetizer.once('packet', success(response));
-
-  // //  if we time out and don't get anything then we thrown an error
-  // var myImpatience = setTimeout( function() {
-  //   self.packetizer.removeListener('packet', success);
-  //   myError = new Error('no response within timeout of' + patience + 'ms');
-  //   return callback(myError);
-  // }, patience);
 }
 
 GPRS.prototype._establishContact = function(callback) {
@@ -106,36 +86,41 @@ GPRS.prototype._establishContact = function(callback) {
       callback function
 
   callback parameters
-    none
+    err
+      an error
+    contacted
+      true/false
   */
 
   var self = this;
 
-  var stage = 1;
+  var pings = 0;
+  var timeouts = 0;
   var contacted = false;
-  for (var i = 0; i < 5; i++)
-  {
-    self.uart.write('AT\r\n');
-    var firstTry = self.packetizer.once(function (reply)
-    {
-      if (reply == 'AT')
-      {
-        stage++;
-        self.packetizer.once(function (reply) {
-          if (reply == 'OK')
-          {
-            stage++;
-          }
-        });
-      }
-    });
-    // setTimeout(function() {
-    //   ;
-    // }, );
-  }
+
+  //  457 is pseudorandom...and unlikely to be used elsewhere
+  self.postmaster.send('AT', 457, function(err, data) {
+    if (err && err.message === 'no reply after 457 ms to message "AT"') {
+      //  if we timeout on an AT, we're probably off. toggle the power button
+      self.power.high();
+      setTimeout(function() {
+        self.power.low();
+        setTimeout(function() {
+          self.power.high();
+        }, 1000);
+      }, 1000);
+    }
+    //this is where we want to be
+    else if (data === ['AT', 'OK']) {
+      callback(null, true);
+    }
+    else {
+      callback(err, false);
+    }
+  });
+}
 
   
-};
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
   /*
