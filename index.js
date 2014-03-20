@@ -147,40 +147,43 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   reps = reps || 5;
 
   self.postmaster.send('AT', 1000, function(err, data) {
+    // console.log('------>\trep ' + rep + ' of ' + reps + '\n\t\terr:\n' + [err] + '\n\t\tdata:\n' + [data] + '\n');
+
     //  too many tries = fail
-
-    console.log('------>\trep ' + rep + ' of ' + reps + '\n\t\terr:\n' + [err] + '\n\t\tdata:\n' + [data] + '\n');
-
     if (rep > reps) {
-      console.log('FAILED TO CONNECT TO MODULE');
-      callback(err, false);
+      // console.log('FAILED TO CONNECT TO MODULE');
+      var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
+      callback(new Error(mess), false);
     }
     //  if we timeout on an AT, we're probably powered off. toggle the power button and try again
     else if (err && err.message === 'no reply after 1000 ms to message "AT"') {
       self.togglePower();
-      console.log('---> module appears off on trial ' + rep);
+      // console.log('---> module appears off on trial ' + rep);
       self.once('powertoggled', function() {
-        console.log('---> power toggled, trying to connect again');
+        // console.log('---> power toggled, trying to connect again');
         self.establishContact(callback, rep + 1, reps);
       })
     }
     //this is where we want to be
     else if (data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
-      console.log('success')
+      // console.log('success')
       self.emit('ready');
       if (callback) {
         callback(null, true);
       }
     }
     else if (err && err.message != 'Postmaster busy') {
-      console.log('---> postmaster busy on rep', rep + '. [err]:\t', [err], '\n[data]:\t', [data], '\n\ttry again');
+      // console.log('---> postmaster busy on rep', rep + '. [err]:\t', [err], '\n[data]:\t', [data], '\n\ttry again');
       self.establishContact(callback, rep + 1, reps);
     }
+    //  this is just to be sure errors (with UART, presumably) get thrown properly
+    else if (err) {
+      callback(err, false);
+    }
     else {
-      console.log('else')
       setTimeout(function() {
         self.establishContact(callback, rep + 1, reps);
-      }, 1200);
+      }, 1100);
     }
   });
 }
