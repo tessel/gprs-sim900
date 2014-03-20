@@ -31,7 +31,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.message = '';
   var started = false;
   
-  this.enders = enders || ['OK', 'ERROR'];
+  this.enders = enders || ['OK', 'ERROR', '> '];
   overflow = overflow || function(err, arg) { 
     if (err) {
       console.log('err: ', err);
@@ -102,7 +102,7 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
     err
       error, if applicable
     data
-      an array of strings, starting with the original call, ending with either 'OK' or 'ERROR'
+      an array of strings, starting with the original call, usually ending with either 'OK', '>', or 'ERROR'
   */
 
   var self = this;

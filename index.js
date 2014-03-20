@@ -25,7 +25,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
   //  the defaults are fine for most of Postmaster's args
-  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR']);
+  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
 
   //  second debug port is optional and largely unnecessary
   // self.debugHardware = null;
@@ -134,15 +134,14 @@ GPRS.prototype.txrxchain = function(messages, patiences, callback) {
       // if (!err && data[0] == messages[0] && data[1] == 'OK') {
       //   correct = true;
       // }
-      console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && data[1] == 'OK'));
-      self.emit('intermediate', (!err && data[0] == messages[0] && data[1] == 'OK'));
+      console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '>')));
+      self.emit('intermediate', (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '>')));
     }
     //  not yet to the callback
     if (messages.length > 0) {
       console.log('sending ' + messages[0] + '...');
 
-      var func = intermediate;
-      func = (messages.length === 1) ? callback:intermediate;
+      var func = (messages.length === 1) ? callback:intermediate;
 
       self.txrx(messages[0], patiences[0], func);
 
@@ -278,17 +277,27 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   */
 
   var self = this;
-
   number = String(number) || '15555555555';
   message = message || 'text from a Tessel';
 
+  // commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"'];
+  // patiences = [15000, 15000];
+
+  // this.txrxchain(commands, patiences, callback);
+
   self.txrx('AT+CMGF=1', 1000, function(err, reply) {
-    if (err) {
-      callback(err, false);
+    if (err || data[1] != 'OK') {
+      callback(err || new Error('FAIL: unable to set SMS mode'), false);
     }
     else {
-      // self.txrx('AT+CMGS="' + number + '"', 1000, )
-      ;
+      self.txrx('AT+CMGS="' + number + '"', 3000, function(err, data) {
+        if (err || data[1] != '> ') {
+          callback(err || new Error('FAIL: unable to set phone number'), false);
+        }
+        else {
+          
+        }
+      });
     }
   });
 }
