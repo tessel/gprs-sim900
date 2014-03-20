@@ -21,7 +21,7 @@ function GPRS (hardware, secondaryHardware, baud) {
 
   self.hardware = hardware;
   self.uart = new hardware.UART({baudrate: baud});
-  self.power = hardware.gpio(3);
+  self.power = hardware.gpio(3).high();
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
   //  the defaults are fine for most of Postmaster's args
@@ -63,6 +63,7 @@ function use(hardware, debug, baud, callback) {
       contacted
         did we establish contact or not? t/f
   */
+  callback = callback || function() {;};
   var radio = new GPRS(hardware, debug, baud);
   radio.establishContact(callback);
   return radio;
@@ -117,9 +118,9 @@ GPRS.prototype.togglePower = function() {
       self.power.high();
       setTimeout(function() {
         self.emit('powertoggled');
-      }, 1000);
+      }, 3000);
     }, 1000);
-  }, 1000);
+  }, 100);
 }
 
 GPRS.prototype.establishContact = function(callback, rep, reps) {
@@ -143,29 +144,43 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
 
   var self = this;
   rep = rep || 0;
-  reps = reps || 2;
+  reps = reps || 5;
 
-  //  457 is pseudorandom...and unlikely to be used elsewhere
-  self.postmaster.send('AT', 457, function(err, data) {
+  self.postmaster.send('AT', 1000, function(err, data) {
     //  too many tries = fail
+
+    console.log('------>\trep ' + rep + ' of ' + reps + '\n\t\terr:\n' + [err] + '\n\t\tdata:\n' + [data] + '\n');
 
     if (rep > reps) {
       console.log('FAILED TO CONNECT TO MODULE');
       callback(err, false);
     }
     //  if we timeout on an AT, we're probably powered off. toggle the power button and try again
-    if (err) {// && err.message === 'no reply after 457 ms to message "AT"') {
+    else if (err && err.message === 'no reply after 1000 ms to message "AT"') {
       self.togglePower();
+      console.log('---> module appears off on trial ' + rep);
       self.once('powertoggled', function() {
-        self.establishContact(callback, rep++, reps);
+        console.log('---> power toggled, trying to connect again');
+        self.establishContact(callback, rep + 1, reps);
       })
     }
     //this is where we want to be
     else if (data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
+      console.log('success')
       self.emit('ready');
       if (callback) {
         callback(null, true);
       }
+    }
+    else if (err && err.message != 'Postmaster busy') {
+      console.log('---> postmaster busy on rep', rep + '. [err]:\t', [err], '\n[data]:\t', [data], '\n\ttry again');
+      self.establishContact(callback, rep + 1, reps);
+    }
+    else {
+      console.log('else')
+      setTimeout(function() {
+        self.establishContact(callback, rep + 1, reps);
+      }, 1200);
     }
   });
 }
@@ -260,6 +275,7 @@ GPRS.prototype.readSMS = function(messageNumber, callback) {
 
   var self = this;
 }
+
 
 module.exports.GPRS = GPRS;
 module.exports.use = use;
