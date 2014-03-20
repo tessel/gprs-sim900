@@ -106,6 +106,63 @@ GPRS.prototype.txrx = function(message, patience, callback) {
   self.postmaster.send(message, patience, callback);
 }
 
+GPRS.prototype.txrxchain = function(messages, patiences, callback) {
+  /*
+  send a series of back-to-back messages recursively, do something with the final result. other results, if not of the form [<message>, <OK>] error out and pass false to the callback. args messages and patience must be of the same length.
+
+  mesages
+    an array of Strings to send as commands
+  patiences
+    an array of numbers; how long to wait for each command to return
+  callback
+    what to call at the end with the final result
+
+  callback parameters
+    err
+      error
+    data
+      what the final message comman returned OR false if the replies were not as expected
+  */
+  var self = this;
+  if (messages.length != patiences.length) {
+    // console.log('length mismatch');
+    callback(new Error('array lengths must match'), false);
+  }
+  else {
+    var intermediate = function(err, data) {
+      // var correct = false;
+      // if (!err && data[0] == messages[0] && data[1] == 'OK') {
+      //   correct = true;
+      // }
+      // // console.log('intermediate', messages);
+      self.emit('intermediate', (!err && data[0] == messages[0] && data[1] == 'OK'));
+    }
+    //  not yet to the callback
+    if (messages.length > 1) {
+      // console.log('sending ' + messages[0] + '...');
+      self.txrx(messages[0], patiences[0], intermediate);
+      self.once('intermediate', function(correct) {
+        // console.log('...got back the expected? ' + correct)
+        if (correct) {
+          // console.log('starting new with', messages.slice(1), patiences.slice(1));
+          self.txrxchain(messages.slice(1), patiences.slice(1), callback);
+        }
+      });
+    }
+    //  at the callback
+    else if (messages.length === 1) {
+      // console.log('len = 1, last call for ' + messages[0])
+      setTimeout(function () {
+        self.txrx(messages[0], patiences[0], callback);
+      }, 1);
+    }
+    else {
+      // console.log('done')
+      //  we're done
+    }
+  }
+}
+
 GPRS.prototype.togglePower = function() {
   /*
   turn the module on or off by switching the power buton (G3) electronically
@@ -166,8 +223,10 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
     }
     //this is where we want to be
     else if (data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
-      // console.log('success')
-      self.emit('ready');
+      // console.log('success');
+      setTimeout(function() {
+        self.emit('ready');
+      }, 1500);
       if (callback) {
         callback(null, true);
       }
@@ -178,12 +237,14 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
     }
     //  this is just to be sure errors (with UART, presumably) get thrown properly
     else if (err) {
+      // console.log('error of some kind: ' + err)
       callback(err, false);
     }
     else {
+      // console.log('just try again, i guess')
       setTimeout(function() {
         self.establishContact(callback, rep + 1, reps);
-      }, 1100);
+      }, 1500);
     }
   });
 }
@@ -194,20 +255,33 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 
   args
     number
-      a string representation of the number. must be at least 10 digits
+      a String representation of the number. must be at least 10 digits.
     message
-      a string to send
+      a String to send
     callback
       callback function
 
   callback parameters
-    none
+    err
+      error
+    success
+      did it send properly?
   */
 
   var self = this;
 
   number = String(number) || '15555555555';
   message = message || 'text from a Tessel';
+
+  self.txrx('AT+CMGF=1', 1000, function(err, reply) {
+    if (err) {
+      callback(err, false);
+    }
+    else {
+      // self.txrx('AT+CMGS="' + number + '"', 1000, )
+      ;
+    }
+  });
 }
 
 GPRS.prototype.dial = function(number, callback) {
