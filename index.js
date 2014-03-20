@@ -134,32 +134,41 @@ GPRS.prototype.txrxchain = function(messages, patiences, callback) {
       // if (!err && data[0] == messages[0] && data[1] == 'OK') {
       //   correct = true;
       // }
-      // // console.log('intermediate', messages);
+      console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && data[1] == 'OK'));
       self.emit('intermediate', (!err && data[0] == messages[0] && data[1] == 'OK'));
     }
     //  not yet to the callback
-    if (messages.length > 1) {
-      // console.log('sending ' + messages[0] + '...');
-      self.txrx(messages[0], patiences[0], intermediate);
-      self.once('intermediate', function(correct) {
-        // console.log('...got back the expected? ' + correct)
-        if (correct) {
-          // console.log('starting new with', messages.slice(1), patiences.slice(1));
-          self.txrxchain(messages.slice(1), patiences.slice(1), callback);
-        }
-      });
+    if (messages.length > 0) {
+      console.log('sending ' + messages[0] + '...');
+
+      var func = intermediate;
+      func = (messages.length === 1) ? callback:intermediate;
+
+      self.txrx(messages[0], patiences[0], func);
+
+      if (func === intermediate) {
+        self.once('intermediate', function(correct) {
+          console.log('...got back the expected? ' + correct)
+          if (correct) {
+            console.log('starting new with', messages.slice(1), patiences.slice(1));
+            setTimeout(function() {
+              self.txrxchain(messages.slice(1), patiences.slice(1), callback);
+            }, patiences[0]);
+          }
+        });
+      }
     }
-    //  at the callback
-    else if (messages.length === 1) {
-      // console.log('len = 1, last call for ' + messages[0])
-      setTimeout(function () {
-        self.txrx(messages[0], patiences[0], callback);
-      }, 1);
-    }
-    else {
-      // console.log('done')
-      //  we're done
-    }
+    // //  at the callback
+    // else if (messages.length === 1) {
+    //   console.log('len = 1, last call for ' + messages[0] + ' waiting ' + patiences[0])
+    //   setTimeout(function () {
+    //     self.txrx(messages[0], patiences[0], callback);
+    //   }, 100);
+    // }
+    // else {
+    //   console.log('done')
+    //   //  we're done
+    // }
   }
 }
 
