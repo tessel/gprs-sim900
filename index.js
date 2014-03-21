@@ -69,7 +69,7 @@ function use(hardware, debug, baud, callback) {
   return radio;
 }
 
-GPRS.prototype.txrx = function(message, patience, callback) {
+GPRS.prototype.txrx = function(message, patience, callback, alternate) {
   /*
   every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
 
@@ -80,7 +80,9 @@ GPRS.prototype.txrx = function(message, patience, callback) {
       milliseconds until we stop listening. it's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it.
     callback
       callback function
-    
+    alternate
+      an alternate start of reply post
+
   callback parameters
     err
       error object
@@ -103,7 +105,7 @@ GPRS.prototype.txrx = function(message, patience, callback) {
   //  it's a virtue, but mostly the module won't work if you're impatient
   patience = Math.max(patience, 100);
 
-  self.postmaster.send(message, patience, callback);
+  self.postmaster.send(message, patience, callback, alternate);
 }
 
 GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
@@ -305,11 +307,12 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   //   self.
   // }
 
-  this.txrxchain(commands, patiences, replies, function(err, data) {
+  self.txrxchain(commands, patiences, replies, function(err, data) {
     //  manually check the last one, then if it checks out transmit the send command
-    var correct = !err && data[0] == replies[3][0] && data[1] == replies[3][1];
+    var correct = !err && data[0] == replies[2][0] && data[1] == replies[2][1];
     if (correct) {
-      // gogogo
+      // gprs.txrx()
+      self.txrx(new Buffer([0x1a]), )
     }
   });
 
