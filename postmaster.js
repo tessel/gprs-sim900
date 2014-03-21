@@ -123,22 +123,26 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
     }
 
     var reply = function(err, reply) {
-      if (self.callback) {
-        self.callback(err, reply);
+      var temp = self.callback;
+      self.callback = null;
+      if (temp) {
+        temp(err, reply);
         // console.log(reply);
       }
-      self.callback = null;
     }
   
-    //  if we get something
-    self.once('post', reply);
-  
     //  if we time out
-    setTimeout(function() {
+    var panic = setTimeout(function() {
       self.removeListener('post', reply);
       reply(new Error('no reply after ' + patience + ' ms to message "' + message + '"'), []);
     }, patience);
   }
+    //  if we get something
+    self.once('post', function(err, data) {
+      clearTimeout(panic);
+      reply(err, data);
+    });
+  
 }
 
 
