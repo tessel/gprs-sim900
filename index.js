@@ -115,7 +115,7 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
   patiences
     an array of numbers; how long to wait for each command to return
   replies
-    an array of expected replies. if any entry is null, its reply 
+    an array of expected replies (arrays of strings). if any index is null, its reply simply must not error out
   callback
     what to call at the end with the final result
 
@@ -136,8 +136,17 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
       // if (!err && data[0] == messages[0] && data[1] == 'OK') {
       //   correct = true;
       // }
-      console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
-      self.emit('intermediate', (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
+      // console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
+      // self.emit('intermediate', (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
+      console.log(err, data)
+      var correct = !err;
+      if (replies[0]) {
+        for (var i = 0; i < data.length; i++) {
+          console.log(data[i], replies[0][i])
+          correct = correct && data[i] == replies[0][i];
+        }
+      }
+      self.emit('intermediate', correct);
     }
     //  not yet to the callback
     if (messages.length > 0) {
@@ -152,9 +161,9 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
           console.log('...got back the expected? ' + correct)
           if (correct) {
             console.log('starting new with', messages.slice(1), patiences.slice(1));
-            setTimeout(function() {
-              self.txrxchain(messages.slice(1), patiences.slice(1), callback);
-            }, patiences[0]);
+            // setTimeout(function() {
+            self.txrxchain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
+            // }, patiences[0]);
           }
         });
       }
@@ -301,36 +310,37 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   number = String(number) || '15555555555';
   message = message || 'text from a Tessel';
 
-  // commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"'];
-  // patiences = [15000, 15000];
+  commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
+  patiences = [2000, 5000, 5000, 5000];
+  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], ['> ' + message]]
 
-  // this.txrxchain(commands, patiences, callback);
+  this.txrxchain(commands, patiences, replies, callback);
 
-  self.txrx('AT+CMGF=1', 2000, function(err, data) {
-    console.log('\ne:\t', err, '\nr:\t', data);
-    if (err || data[1] != 'OK') {
-      callback(err || new Error('FAIL: unable to set SMS mode'), false);
-    }
-    else {
-      self.txrx('AT+CMGS="' + number + '"', 6000, function(err, data) {
-        console.log('\ne:\t', err, '\nr:\t', data);
-        if (err || data[1] != '> ') {
-          callback(err || new Error('FAIL: unable to set phone number'), false);
-        }
-        else {
-          self.txrx(message, 6000, function(err, data) {
-            console.log('\ne:\t', err, '\nr:\t', data);
-            if (err || data[1] != '> ') {
-              callback(err || new Error('FAIL: unable to set phone number'), false);
-            }
-            else {
+  // self.txrx('AT+CMGF=1', 2000, function(err, data) {
+  //   console.log('\ne:\t', err, '\nr:\t', data);
+  //   if (err || data[1] != 'OK') {
+  //     callback(err || new Error('FAIL: unable to set SMS mode'), false);
+  //   }
+  //   else {
+  //     self.txrx('AT+CMGS="' + number + '"', 6000, function(err, data) {
+  //       console.log('\ne:\t', err, '\nr:\t', data);
+  //       if (err || data[1] != '> ') {
+  //         callback(err || new Error('FAIL: unable to set phone number'), false);
+  //       }
+  //       else {
+  //         self.txrx(message, 6000, function(err, data) {
+  //           console.log('\ne:\t', err, '\nr:\t', data);
+  //           if (err || data[1] != '> ') {
+  //             callback(err || new Error('FAIL: unable to set phone number'), false);
+  //           }
+  //           else {
               
-            }
-          });
-        }
-      });
-    }
-  });
+  //           }
+  //         });
+  //       }
+  //     });
+  //   }
+  // });
 }
 
 GPRS.prototype.dial = function(number, callback) {
