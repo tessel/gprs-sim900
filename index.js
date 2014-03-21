@@ -161,24 +161,11 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
           console.log('...got back the expected? ' + correct)
           if (correct) {
             console.log('starting new with', messages.slice(1), patiences.slice(1));
-            // setTimeout(function() {
             self.txrxchain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
-            // }, patiences[0]);
           }
         });
       }
     }
-    // //  at the callback
-    // else if (messages.length === 1) {
-    //   console.log('len = 1, last call for ' + messages[0] + ' waiting ' + patiences[0])
-    //   setTimeout(function () {
-    //     self.txrx(messages[0], patiences[0], callback);
-    //   }, 100);
-    // }
-    // else {
-    //   console.log('done')
-    //   //  we're done
-    // }
   }
 }
 
@@ -310,11 +297,21 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   number = String(number) || '15555555555';
   message = message || 'text from a Tessel';
 
-  commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message, new Buffer([0x1a])];
-  patiences = [2000, 5000, 5000, 5000];
-  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> '], null]
+  commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
+  patiences = [2000, 5000, 5000];
+  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
-  this.txrxchain(commands, patiences, replies, callback);
+  // var didItWork = function(err, data) {
+  //   self.
+  // }
+
+  this.txrxchain(commands, patiences, replies, function(err, data) {
+    //  manually check the last one, then if it checks out transmit the send command
+    var correct = !err && data[0] == replies[3][0] && data[1] == replies[3][1];
+    if (correct) {
+      // gogogo
+    }
+  });
 
   // self.txrx('AT+CMGF=1', 2000, function(err, data) {
   //   console.log('\ne:\t', err, '\nr:\t', data);

@@ -29,7 +29,8 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.RXQueue = [];
   this.callback = null;
   this.message = '';
-  var started = false;
+  this.started = false;
+  this.alternate = false;
   
   this.enders = enders || ['OK', 'ERROR', '> '];
   overflow = overflow || function(err, arg) { 
@@ -55,25 +56,27 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   //  when we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    if (self.callback === null || (data != self.message && !started)) {
+    if (self.callback === null || (data != self.message && !self.started)) {
       self.emit('unsolicited', null, data);
     }
-    else if (started || data === self.message) {
-      started = true;
+    else if (self.started || data === self.message || data === self.alternate) {
+      self.started = true;
       self.RXQueue.push(data);
     }
     //  check to see of we've finished the post
     if (self.enders.indexOf(data) > -1) {
       var temp = self.RXQueue;
       self.RXQueue = [];
-      started = false;
+      self.started = false;
+      self.alternate = false;
       self.emit('post', null, temp);
     }
     //  check overflow
     if (self.RXQueue.length > size) {
       self.emit('overflow', null, self.RXQueue);
       self.RXQueue = [];
-      started = false;
+      self.started = false;
+      self.alternate = false;
       self.message = '';
     }
   });
@@ -84,9 +87,9 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
 
 util.inherits(Postmaster, EventEmitter);
 
-Postmaster.prototype.send = function (message, patience, callback, debug) {
+Postmaster.prototype.send = function (message, patience, callback, alternate, debug) {
   /*
-  send a message and add its callback to the queue. nite that the callback is deferred considerably...
+  send a message and add call its callback with the data from the reply
   
   args
     message
@@ -95,6 +98,9 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
       the callback function to call with the resulting data
     patience
       ms to wait before returning with an error
+    alternate
+      an alternate String to be used in addition to an echo of the transmitted message as a start of the reply.
+      if false, the function will build a post until an ender is recieved. 
     debug
       debug flag
       
@@ -102,7 +108,7 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
     err
       error, if applicable
     data
-      an array of strings, starting with the original call, usually ending with either 'OK', '>', or 'ERROR'
+      an array of strings, usually starting with the original call, usually ending with one of 'OK', '>', or 'ERROR'
   */
 
   var self = this;
@@ -112,6 +118,9 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
     callback(new Error('Postmaster busy'), []);
   }
   else {
+    if (alternate) {
+      self.alternate = alternate;
+    }
     //  set things up
     self.callback = callback;
     patience = patience || 10000;
@@ -137,13 +146,12 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
       self.removeListener('post', reply);
       reply(new Error('no reply after ' + patience + ' ms to message "' + message + '"'), []);
     }, patience);
-  }
     //  if we get something
     self.once('post', function(err, data) {
       clearTimeout(panic);
       reply(err, data);
     });
-  
+  }
 }
 
 
