@@ -59,7 +59,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
     if (self.callback === null || (data != self.message && !self.started)) {
       self.emit('unsolicited', null, data);
     }
-    else if (self.started || data === self.message || data === self.alternate) {
+    else if (self.started || data === self.message || data === self.alternate || self.alternate === false) {
       self.started = true;
       self.RXQueue.push(data);
     }
@@ -68,7 +68,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
       var temp = self.RXQueue;
       self.RXQueue = [];
       self.started = false;
-      self.alternate = false;
+      self.alternate = null;
       self.emit('post', null, temp);
     }
     //  check overflow
@@ -76,7 +76,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
       self.emit('overflow', null, self.RXQueue);
       self.RXQueue = [];
       self.started = false;
-      self.alternate = false;
+      self.alternate = null;
       self.message = '';
     }
   });

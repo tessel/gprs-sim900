@@ -81,7 +81,7 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
     callback
       callback function
     alternate
-      an alternate start of reply post
+      an alternate start of reply post. if ===false, collect until you get an ender
 
   callback parameters
     err
@@ -102,6 +102,7 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
       console.log('reply:\n', arg);
     };
   });
+  alternate = alternate || null;
   //  it's a virtue, but mostly the module won't work if you're impatient
   patience = Math.max(patience, 100);
 
