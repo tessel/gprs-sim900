@@ -117,7 +117,8 @@ Postmaster.prototype.send = function (message, patience, callback, debug) {
     patience = patience || 10000;
     
     self.message = message;
-    self.uart.write(message + '\r\n');
+    self.uart.write(message);
+    self.uart.write('\r\n');
     if (debug) {
       console.log('sent', [message], 'on uart', [uart]);
     }

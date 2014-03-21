@@ -138,11 +138,11 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
       // }
       // console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
       // self.emit('intermediate', (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
-      console.log(err, data)
+      console.log('startng intermediate. e, r:', err, data)
       var correct = !err;
       if (replies[0]) {
         for (var i = 0; i < data.length; i++) {
-          console.log(data[i], replies[0][i])
+          console.log('di', data[i], 'r0i', replies[0][i])
           correct = correct && data[i] == replies[0][i];
         }
       }
@@ -310,9 +310,9 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   number = String(number) || '15555555555';
   message = message || 'text from a Tessel';
 
-  commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
+  commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message, new Buffer([0x1a])];
   patiences = [2000, 5000, 5000, 5000];
-  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], ['> ' + message]]
+  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> '], null]
 
   this.txrxchain(commands, patiences, replies, callback);
 
