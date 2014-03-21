@@ -99,8 +99,8 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     patience
       ms to wait before returning with an error
     alternate
-      an alternate String to be used in addition to an echo of the transmitted message as a start of the reply.
-      if false, the function will build a post until an ender is recieved. 
+      an alternate post start String (in addition to an echo of the transmitted message).
+      if ===false, the function will build a post until an ender is recieved. 
     debug
       debug flag
       
