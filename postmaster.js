@@ -30,7 +30,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.callback = null;
   this.message = '';
   this.started = false;
-  this.alternate = false;
+  this.alternate = null;
   this.enders = enders || ['OK', 'ERROR'];
   overflow = overflow || function(err, arg) { 
     if (err) {
@@ -56,29 +56,35 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.packetizer.on('packet', function(data) {
     var starts = [self.message];
     var enders = self.enders;
-    if (alternate) {
+    if (self.alternate) {
       //  use the alternate starts and ends
-      starts = alternate[0];
-      enders = alternate[1];
+      starts = self.alternate[0];
+      enders = self.alternate[1];
     }
+
+    console.log('got a packet with ' + [data], '\nstarts:', starts, '\nenders:', enders);
+
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
     // if (self.callback === null || (data != self.message && !self.started) || (self.alternate && self.alternate[0].indexOf(data) > -1)) {
     if (self.callback === null || (!self.started && starts.indexOf(data) === -1)) {
       self.emit('unsolicited', null, data);
     }
-    }
     // else if (self.started || data === self.message || data === self.alternate.inde || self.alternate === false) {
-    else if (self.started || starts.indexOf(data) > -1) {
-      self.started = true;
-      self.RXQueue.push(data);
-    }
-    //  check to see of we've finished the post
-    if (enders.indexOf(data) > -1) {
-      var temp = self.RXQueue;
-      self.RXQueue = [];
-      self.started = false;
-      self.alternate = null;
-      self.emit('post', null, temp);
+    else {
+      if (self.started || starts.indexOf(data) > -1) {
+        console.log('adding )
+        self.started = true;
+        self.RXQueue.push(data);
+      }
+      //  check to see of we've finished the post
+      if (enders.indexOf(data) > -1) {
+        console.log('\t---> Found '+ data + ' in enders:\n', enders, '\nEmitting a post with:\n', self.RXQueue);
+        var temp = self.RXQueue;
+        self.RXQueue = [];
+        self.started = false;
+        self.alternate = null;
+        self.emit('post', null, temp);
+      }
     }
     //  check overflow
     if (self.RXQueue.length > size) {
@@ -109,7 +115,6 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       ms to wait before returning with an error
     alternate
       an array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...],[e1, e2, ...]]. used in place of traditional controls.
-      if ===false, collect packets until you get an ender.
     debug
       debug flag
       

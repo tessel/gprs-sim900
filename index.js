@@ -158,7 +158,7 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
 
       var func = (messages.length === 1) ? callback:intermediate;
 
-      self.txrx(messages[0], patiences[0], func);
+      self.txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
 
       if (func === intermediate) {
         self.once('intermediate', function(correct) {
@@ -303,7 +303,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 
   commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
   patiences = [2000, 5000, 5000];
-  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
+  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> ']];
 
   // var didItWork = function(err, data) {
   //   self.
@@ -311,12 +311,12 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 
   self.txrxchain(commands, patiences, replies, function(err, data) {
     //  manually check the last one, then if it checks out transmit the send command
-    var correct = !err && data[0] == replies[2][0] && data[1] == replies[2][1];
+    var correct = !err && data[0] == replies[2][0];// && data[1] == replies[2][1];
     if (correct) {
-      // gprs.txrx()
+      console.log('got the right reply, time to tell it to send.\npostmaster:', self.postmaster);
       self.txrx(new Buffer([0x1a]), 5000, function(err, data) {
-        console.log('selt the send command, got back', err, data);
-      }, '> ');
+        console.log('sent the send command, got back', err, data);
+      }, [['> '], ['OK', 'ERROR']]);
     }
   });
 
