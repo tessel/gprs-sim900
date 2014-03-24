@@ -82,7 +82,7 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
       callback function
     alternate
       an array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...],[e1, e2, ...]]. used in place of traditional controls.
-      if ===false, collect packets until you get an ender.
+      if the third element of alternate is truth-y, then the given start values only need exist within the incoming data (good for posts with known headers but unknown bodies) 
 
   callback parameters
     err
@@ -131,17 +131,11 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
   */
   var self = this;
   if (messages.length != patiences.length || messages.length != replies.length) {
-    // console.log('length mismatch');
+    console.log('length mismatch');
     callback(new Error('array lengths must match'), false);
   }
   else {
     var intermediate = function(err, data) {
-      // var correct = false;
-      // if (!err && data[0] == messages[0] && data[1] == 'OK') {
-      //   correct = true;
-      // }
-      // console.log('intermediate', messages, data, err, (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
-      // self.emit('intermediate', (!err && data[0] == messages[0] && (data[1] == 'OK' || data[1] == '> ')));
       console.log('startng intermediate. e, r:', err, data)
       var correct = !err;
       if (replies[0]) {
@@ -167,6 +161,10 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
             console.log('starting new with', messages.slice(1), patiences.slice(1));
             self.txrxchain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
           }
+          else {
+            console.log('resetting the postmaster');
+            self.postmaster.forceClear();
+          }
         });
       }
     }
@@ -185,7 +183,7 @@ GPRS.prototype.togglePower = function() {
       self.power.high();
       setTimeout(function() {
         self.emit('powertoggled');
-      }, 3000);
+      }, 5000);
     }, 1000);
   }, 100);
 }
@@ -214,8 +212,6 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   reps = reps || 5;
 
   self.postmaster.send('AT', 1000, function(err, data) {
-    // console.log('------>\trep ' + rep + ' of ' + reps + '\n\t\terr:\n' + [err] + '\n\t\tdata:\n' + [data] + '\n');
-
     //  too many tries = fail
     if (rep > reps) {
       // console.log('FAILED TO CONNECT TO MODULE');
@@ -225,15 +221,12 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
     //  if we timeout on an AT, we're probably powered off. toggle the power button and try again
     else if (err && err.message === 'no reply after 1000 ms to message "AT"') {
       self.togglePower();
-      // console.log('---> module appears off on trial ' + rep);
       self.once('powertoggled', function() {
-        // console.log('---> power toggled, trying to connect again');
         self.establishContact(callback, rep + 1, reps);
       })
     }
     //this is where we want to be
     else if (data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
-      // console.log('success');
       setTimeout(function() {
         self.emit('ready');
       }, 1500);
@@ -275,7 +268,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     err
       error
     success
-      did it send properly?
+      did it send properly? if yes, get back the ID number of the text, if not, the error and -1 as the ID
 
   we're trying to replicate this, modulo timeouts, and add error handling:
 
@@ -303,48 +296,26 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 
   commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
   patiences = [2000, 5000, 5000];
-  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> ']];
-
-  // var didItWork = function(err, data) {
-  //   self.
-  // }
+  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
   self.txrxchain(commands, patiences, replies, function(err, data) {
-    //  manually check the last one, then if it checks out transmit the send command
-    var correct = !err && data[0] == replies[2][0];// && data[1] == replies[2][1];
+    //  manually check the last one
+    var correct = !err && data[0] == message && data[1] == '> ';
     if (correct) {
-      console.log('got the right reply, time to tell it to send.\npostmaster:', self.postmaster);
-      self.txrx(new Buffer([0x1a]), 5000, function(err, data) {
-        console.log('sent the send command, got back', err, data);
-      }, [['> '], ['OK', 'ERROR']]);
+      self.txrx(new Buffer([0x1a]), 10000, function(err, data) {
+        // console.log('sent the send command, got back', err, data);
+        var id = -1;
+        var err = err || new Error('Unable to send SMS');
+        // if all goes well, err=undefined and data = ['+CMGS: ###', 'OK']
+        if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
+          //  message sent!
+          id = parseInt(data[0].slice(7), 10);
+          err = null;
+        }
+        callback(err, id);
+      }, [['+CMGS: ', 'ERROR'], ['OK', 'ERROR'], 1]);
     }
   });
-
-  // self.txrx('AT+CMGF=1', 2000, function(err, data) {
-  //   console.log('\ne:\t', err, '\nr:\t', data);
-  //   if (err || data[1] != 'OK') {
-  //     callback(err || new Error('FAIL: unable to set SMS mode'), false);
-  //   }
-  //   else {
-  //     self.txrx('AT+CMGS="' + number + '"', 6000, function(err, data) {
-  //       console.log('\ne:\t', err, '\nr:\t', data);
-  //       if (err || data[1] != '> ') {
-  //         callback(err || new Error('FAIL: unable to set phone number'), false);
-  //       }
-  //       else {
-  //         self.txrx(message, 6000, function(err, data) {
-  //           console.log('\ne:\t', err, '\nr:\t', data);
-  //           if (err || data[1] != '> ') {
-  //             callback(err || new Error('FAIL: unable to set phone number'), false);
-  //           }
-  //           else {
-              
-  //           }
-  //         });
-  //       }
-  //     });
-  //   }
-  // });
 }
 
 GPRS.prototype.dial = function(number, callback) {

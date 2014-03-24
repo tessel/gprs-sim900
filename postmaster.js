@@ -8,7 +8,7 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 
-function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
+function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
   /*
   constructor for the postmaster
 
@@ -23,6 +23,8 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
       a callback function to call when the message buffer overflows. callback args are err and data
     size
       size (in packets) of the buffer
+    debug
+      are we in debug mode?
   */
   this.packetizer = myPacketizer;
   this.uart = myPacketizer.uart;
@@ -32,6 +34,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.started = false;
   this.alternate = null;
   this.enders = enders || ['OK', 'ERROR'];
+  this.debug = debug || false;
   overflow = overflow || function(err, arg) { 
     if (err) {
       console.log('err: ', err);
@@ -62,23 +65,36 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
       enders = self.alternate[1];
     }
 
-    console.log('got a packet with ' + [data], '\nstarts:', starts, '\nenders:', enders);
+    if (self.debug) {
+      console.log('got a packet with ' + [data], '\nstarts:', starts, '\nenders:', enders);
+    }
 
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
     // if (self.callback === null || (data != self.message && !self.started) || (self.alternate && self.alternate[0].indexOf(data) > -1)) {
-    if (self.callback === null || (!self.started && starts.indexOf(data) === -1)) {
-      self.emit('unsolicited', null, data);
+    //  
+    if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
+        if (self.debug) {
+          console.log([data], [partialStart], data.indexOf(partialStart));
+        }
+        return data.indexOf(partialStart) === -1;
+      }).length != self.alternate[0].length)) {
+      //  check that we're not using soft logic either...
+      self.emit('unsolicited', null, data); 
     }
     // else if (self.started || data === self.message || data === self.alternate.inde || self.alternate === false) {
     else {
-      if (self.started || starts.indexOf(data) > -1) {
-        console.log('adding )
-        self.started = true;
-        self.RXQueue.push(data);
+      // if (self.started || starts.indexOf(data) > -1) {
+      if (self.debug) {
+        console.log('adding', [data], 'to the RXQueue');
       }
+      self.started = true;
+      self.RXQueue.push(data);
+      // }
       //  check to see of we've finished the post
       if (enders.indexOf(data) > -1) {
-        console.log('\t---> Found '+ data + ' in enders:\n', enders, '\nEmitting a post with:\n', self.RXQueue);
+        if (self.debug) {
+          console.log('\t---> Found '+ data + ' in enders:\n', enders, '\nEmitting a post with:\n', self.RXQueue);
+        }
         var temp = self.RXQueue;
         self.RXQueue = [];
         self.started = false;
@@ -115,6 +131,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       ms to wait before returning with an error
     alternate
       an array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...],[e1, e2, ...]]. used in place of traditional controls.
+      if the third element of alternate is truth-y, then the given start values only need exist within the incoming data (good for posts with known headers but unknown bodies) 
     debug
       debug flag
       
@@ -126,7 +143,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
   */
 
   var self = this;
-  debug = debug || false;
+  self.debug = debug || false;
 
   if (self.callback != null) {
     callback(new Error('Postmaster busy'), []);
@@ -142,7 +159,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     self.message = message;
     self.uart.write(message);
     self.uart.write('\r\n');
-    if (debug) {
+    if (self.debug) {
       console.log('sent', [message], 'on uart', [uart]);
     }
 
@@ -166,6 +183,18 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       reply(err, data);
     });
   }
+}
+
+Postmaster.prototype.forceClear = function(type)
+{
+  //  Reset the postmaster to its default state, emit what you have as unsolicited
+  this.emit(type || 'unsolicited', null, RXQueue);
+  this.RXQueue = [];
+  this.callback = null;
+  this.message = '';
+  this.started = false;
+  this.alternate = null;
+  this.enders = ['OK', 'ERROR'];
 }
 
 
