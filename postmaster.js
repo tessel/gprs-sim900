@@ -31,8 +31,7 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   this.message = '';
   this.started = false;
   this.alternate = false;
-  
-  this.enders = enders || ['OK', 'ERROR', '> '];
+  this.enders = enders || ['OK', 'ERROR'];
   overflow = overflow || function(err, arg) { 
     if (err) {
       console.log('err: ', err);
@@ -55,16 +54,26 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size) {
   
   //  when we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
+    var starts = [self.message];
+    var enders = self.enders;
+    if (alternate) {
+      //  use the alternate starts and ends
+      starts = alternate[0];
+      enders = alternate[1];
+    }
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    if (self.callback === null || (data != self.message && !self.started)) {
+    // if (self.callback === null || (data != self.message && !self.started) || (self.alternate && self.alternate[0].indexOf(data) > -1)) {
+    if (self.callback === null || (!self.started && starts.indexOf(data) === -1)) {
       self.emit('unsolicited', null, data);
     }
-    else if (self.started || data === self.message || data === self.alternate || self.alternate === false) {
+    }
+    // else if (self.started || data === self.message || data === self.alternate.inde || self.alternate === false) {
+    else if (self.started || starts.indexOf(data) > -1) {
       self.started = true;
       self.RXQueue.push(data);
     }
     //  check to see of we've finished the post
-    if (self.enders.indexOf(data) > -1) {
+    if (enders.indexOf(data) > -1) {
       var temp = self.RXQueue;
       self.RXQueue = [];
       self.started = false;
@@ -99,8 +108,8 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     patience
       ms to wait before returning with an error
     alternate
-      an alternate post start String (in addition to an echo of the transmitted message).
-      if ===false, the function will build a post until an ender is recieved. 
+      an array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...],[e1, e2, ...]]. used in place of traditional controls.
+      if ===false, collect packets until you get an ender.
     debug
       debug flag
       

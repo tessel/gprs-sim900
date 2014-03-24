@@ -81,7 +81,8 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
     callback
       callback function
     alternate
-      an alternate start of reply post. if ===false, collect until you get an ender
+      an array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...],[e1, e2, ...]]. used in place of traditional controls.
+      if ===false, collect packets until you get an ender.
 
   callback parameters
     err
@@ -313,7 +314,9 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     var correct = !err && data[0] == replies[2][0] && data[1] == replies[2][1];
     if (correct) {
       // gprs.txrx()
-      self.txrx(new Buffer([0x1a]), )
+      self.txrx(new Buffer([0x1a]), 5000, function(err, data) {
+        console.log('selt the send command, got back', err, data);
+      }, '> ');
     }
   });
 
