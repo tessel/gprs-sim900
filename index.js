@@ -219,14 +219,14 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
       callback(new Error(mess));
     }
-    //  if we timeout on an AT, we're probably powered off. toggle the power button and try again
+    //  if we timeout on an AT, we're probably powered off. Toggle the power button and try again
     else if (err && err.message === 'no reply after 1000 ms to message "AT"') {
       self.togglePower();
       self.once('powertoggled', function() {
         self.establishContact(callback, rep + 1, reps);
       });
     }
-    //this is where we want to be
+    //  this is where we want to be
     else if (!err && data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
       setTimeout(function() {
         self.emit('ready');
