@@ -172,7 +172,7 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
   }
 }
 
-GPRS.prototype.togglePower = function() {
+GPRS.prototype.togglePower = function(callback) {
   /*
   turn the module on or off by switching the power buton (G3) electronically
   */
@@ -184,6 +184,7 @@ GPRS.prototype.togglePower = function() {
       self.power.high();
       setTimeout(function() {
         self.emit('powertoggled');
+        callback();
       }, 5000);
     }, 1000);
   }, 100);
@@ -215,7 +216,6 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   self.postmaster.send('AT', 1000, function(err, data) {
     //  too many tries = fail
     if (rep > reps) {
-      // console.log('FAILED TO CONNECT TO MODULE');
       var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
       callback(new Error(mess), false);
     }
@@ -236,12 +236,10 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       }
     }
     else if (err && err.message != 'Postmaster busy') {
-      // console.log('---> postmaster busy on rep', rep + '. [err]:\t', [err], '\n[data]:\t', [data], '\n\ttry again');
       self.establishContact(callback, rep + 1, reps);
     }
     //  this is just to be sure errors (with UART, presumably) get thrown properly
     else if (err) {
-      // console.log('error of some kind: ' + err)
       callback(err, false);
     }
     else {
@@ -344,7 +342,7 @@ GPRS.prototype.dial = function(number, callback) {
   }
   else {
     this.inACall = true;
-                        //  hang up in a year
+                                //  hang up in a year
     this.txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
       this.inACall = false;
       callback(err, data);
@@ -354,7 +352,7 @@ GPRS.prototype.dial = function(number, callback) {
 
 GPRS.prototype.hangUp = function(callback) {
   /*
-  terminate a vouce call
+  terminate a voice call
 
   args
     callback
@@ -364,9 +362,13 @@ GPRS.prototype.hangUp = function(callback) {
     err
       error
     data
-      reply upon hangup
+      reply upon hangup: ['ATH', 'OK']
   */
-  this.txrx('ATH', 100000, callback);
+  var self = this;
+  this.txrx('ATH', 100000, function(err, data) {
+    self.inACall = false;
+    callback(err, data);
+  });
 }
 
 GPRS.prototype.answerCall = function(callback) {
