@@ -198,7 +198,7 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
     callback
       Callback function
     rep
-      How many times ahve we tried?
+      How many times have we tried?
     reps
       How many times until we give up
 
