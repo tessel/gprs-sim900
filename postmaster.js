@@ -1,7 +1,7 @@
 /* 
-packetizer is great in that it builds packets, but sometimes replies don't
-come in in an orderly fashion. if this happens, we need to be able to be able
-to route them appropriately. here goes...
+Packetizer is great in that it builds packets, but sometimes replies don't
+come in in an orderly fashion. If this happens, we need to be able to be able
+to route them appropriately.
 */
 
 var util = require('util');
@@ -10,22 +10,23 @@ var Packetizer = require('./packetizer.js');
 
 function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
   /*
-  constructor for the postmaster
+  Constructor for the postmaster
 
   args
     myPacketizer
-      a packetizer to listen to
+      A packetizer to listen to
     enders
-      an array of strings that constitute the end of a post
+      An Array of Strings that constitute the end of a post
     unsolicited
-      a callback function to call when an unsolicited packet comes in. callback args are err and data
+      A callback function to call when an unsolicited packet comes in. Callback args are err and data
     overflow
-      a callback function to call when the message buffer overflows. callback args are err and data
+      A callback function to call when the message buffer overflows. Callback args are err and data
     size
-      size (in packets) of the buffer
+      Size (in packets) of the buffer
     debug
-      are we in debug mode?
+      Are we in debug mode?
   */
+  
   this.packetizer = myPacketizer;
   this.uart = myPacketizer.uart;
   this.RXQueue = [];
@@ -70,8 +71,6 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
     }
 
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    // if (self.callback === null || (data != self.message && !self.started) || (self.alternate && self.alternate[0].indexOf(data) > -1)) {
-    //  
     if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
         if (self.debug) {
           console.log([data], [partialStart], data.indexOf(partialStart));
@@ -81,15 +80,12 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
       //  check that we're not using soft logic either...
       self.emit('unsolicited', null, data); 
     }
-    // else if (self.started || data === self.message || data === self.alternate.inde || self.alternate === false) {
     else {
-      // if (self.started || starts.indexOf(data) > -1) {
       if (self.debug) {
         console.log('adding', [data], 'to the RXQueue');
-      }
+        }
       self.started = true;
       self.RXQueue.push(data);
-      // }
       //  check to see of we've finished the post
       if (enders.indexOf(data) > -1) {
         if (self.debug) {
@@ -120,26 +116,26 @@ util.inherits(Postmaster, EventEmitter);
 
 Postmaster.prototype.send = function (message, patience, callback, alternate, debug) {
   /*
-  send a message and add call its callback with the data from the reply
+  Aend a message and add call its callback with the data from the reply
   
   args
     message
-      what to send
+      What to send
     callback
-      the callback function to call with the resulting data
+      The callback function to call with the resulting data
     patience
-      ms to wait before returning with an error
+      Miliseconds to wait before returning with an error
     alternate
-      an array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...],[e1, e2, ...]]. used in place of traditional controls.
-      if the third element of alternate is truth-y, then the given start values only need exist within the incoming data (good for posts with known headers but unknown bodies) 
+      An Array of Arrays of alternate starts and ends of the reply post (Strings). Of the form [[s1, s2 ...], [e1, e2, ...]]. These values are used in place of traditional controls.
+      If the third element of alternate is truth-y, then the given start values only need exist within the incoming data (good for posts with known headers but unknown bodies).
     debug
-      debug flag
+      Debug flag
       
-  callback parameters
+  Callback parameters
     err
-      error, if applicable
+      Error, if applicable
     data
-      an array of strings, usually starting with the original call, usually ending with one of 'OK', '>', or 'ERROR'
+      An array of Strings, usually starting with the original call, usually ending with one of 'OK', '>', or 'ERROR'
   */
 
   var self = this;
@@ -168,7 +164,6 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       self.callback = null;
       if (temp) {
         temp(err, reply);
-        // console.log(reply);
       }
     }
   
