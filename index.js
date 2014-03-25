@@ -209,15 +209,15 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   var self = this;
   rep = rep || 0;
   reps = reps || 5;
-
-  self.postmaster.send('AT', 1000, function(err, data) {
+  var patience = 1000; 
+  self.postmaster.send('AT', patience, function(err, data) {
     //  too many tries = fail
     if (rep > reps) {
       var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
       callback(new Error(mess));
     }
     //  if we timeout on an AT, we're probably powered off. Toggle the power button and try again
-    else if (err && err.message === 'no reply after 1000 ms to message "AT"') {
+    else if (err && err.type === 'timeout during postmaster.send() with patience ' + patience) {
       self.togglePower();
       self.once('powertoggled', function() {
         self.establishContact(callback, rep + 1, reps);

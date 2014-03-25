@@ -170,7 +170,9 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     //  if we time out
     var panic = setTimeout(function() {
       self.removeListener('post', reply);
-      reply(new Error('no reply after ' + patience + ' ms to message "' + message + '"'), []);
+      var err = new Error('no reply after ' + patience + ' ms to message "' + message + '"');
+      err.type = 'timeout during postmaster.send() with patience ' + patience;
+      reply(err, []);
     }, patience);
     //  if we get something
     self.once('post', function(err, data) {
