@@ -367,13 +367,16 @@ GPRS.prototype.ignoreCall = function(callback) {
   var self = this;
 }
 
-GPRS.prototype.readSMS = function(messageNumber, callback) {
+GPRS.prototype.readSMS = function(index, mode, callback) {
   /*
-  answer an incoming voice call
+  read the specified SMS
 
   args - two possibilities
-    messageNumber
-      the index of the message to read. if not specified, the newest message is read
+    index
+      the index of the message to read. if not specified, the newest message is read. note that these are 1-indexed, not 0-indexed.
+    mode
+      0 - mark the message as read
+      1 - do not chage the status of the message
     callback
       callback function
 
@@ -381,10 +384,15 @@ GPRS.prototype.readSMS = function(messageNumber, callback) {
     err
       error
     message
-      the SMS string
+      an array with
+        0 - command echo
+        1 - message information (read state, soure number, date, etc.)
+        2 - message text
+        3 - 'OK'
+      if successful
   */
 
-  var self = this;
+  this.txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
 }
 
 
