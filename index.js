@@ -217,7 +217,7 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       callback(new Error(mess));
     }
     //  if we timeout on an AT, we're probably powered off. Toggle the power button and try again
-    else if (err && err.type === 'timeout during postmaster.send() with patience ' + patience) {
+    else if (err && err.type === 'timeout') {
       self.togglePower();
       self.once('powertoggled', function() {
         self.establishContact(callback, rep + 1, reps);

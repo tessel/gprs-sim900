@@ -171,7 +171,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     var panic = setTimeout(function() {
       self.removeListener('post', reply);
       var err = new Error('no reply after ' + patience + ' ms to message "' + message + '"');
-      err.type = 'timeout during postmaster.send() with patience ' + patience;
+      err.type = 'timeout';
       reply(err, []);
     }, patience);
     //  if we get something
