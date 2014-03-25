@@ -266,30 +266,33 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
       Did it send properly? If yes, get back the ID number of the text, if not, the error and -1 as the ID.
   */
 
-  var self = this;
-  number = String(number) || '15555555555';
-  message = message || 'text from a Tessel';
+  if (!number) {
+    callback(new Error('Did not specify a 10+ digit number'), null);
+  }
+  else {
+    var self = this;
+    message = message || 'text from a Tessel';
+    commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
+    patiences = [2000, 5000, 5000];
+    replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
-  commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
-  patiences = [2000, 5000, 5000];
-  replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
-
-  self.txrxchain(commands, patiences, replies, function(err, data) {
-    //  manually check the last one
-    var correct = !err && data[0] == message && data[1] == '> ';
-    if (correct) {
-      self.txrx(new Buffer([0x1a]), 10000, function(err, data) {
-        var id = -1;
-        var err = err || new Error('Unable to send SMS');
-        if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
-          //  message sent!
-          id = parseInt(data[0].slice(7), 10);
-          err = null;
-        }
-        callback(err, id);
-      }, [['+CMGS: ', 'ERROR'], ['OK', 'ERROR'], 1]);
-    }
-  });
+    self.txrxchain(commands, patiences, replies, function(err, data) {
+      //  manually check the last one
+      var correct = !err && data[0] == message && data[1] == '> ';
+      if (correct) {
+        self.txrx(new Buffer([0x1a]), 10000, function(err, data) {
+          var id = -1;
+          var err = err || new Error('Unable to send SMS');
+          if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
+            //  message sent!
+            id = parseInt(data[0].slice(7), 10);
+            err = null;
+          }
+          callback(err, id);
+        }, [['+CMGS: ', 'ERROR'], ['OK', 'ERROR'], 1]);
+      }
+    });
+  }
 }
 
 GPRS.prototype.dial = function(number, callback) {
@@ -312,7 +315,7 @@ GPRS.prototype.dial = function(number, callback) {
   if (this.inACall) {
     callback(new Error('Currently in a call'), []);
   }
-  else if (String(number).length < 10) {
+  else if (!number || String(number).length < 10) {
     callback(new Error('Number must be at least 10 digits'), []);
   }
   else {
