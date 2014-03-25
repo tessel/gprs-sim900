@@ -407,7 +407,7 @@ GPRS.prototype.notifyOn = function(pairs) {
     pairs
       An Object which maps unsolicited message header Strings (e.g. '+CMT' = text message recieved) to callback functions.
 
- Ccallback parameters
+  Callback parameters
     None, but the given functions in pairs should accept the follwing arguments:
       err
         An error, if applicable
