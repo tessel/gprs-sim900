@@ -24,6 +24,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.power = hardware.gpio(3).high();
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
+  self.inACall = false;
   //  the defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
 
@@ -329,11 +330,43 @@ GPRS.prototype.dial = function(number, callback) {
       callback function
 
   callback parameters
-    call
-      a call object
+    err
+      error, if applicable
+    data
+      [command echo, 'OK'] if all goes well
   */
 
-  var self = this;
+  if (this.inACall) {
+    callback(new Error('Currently in a call'), []);
+  }
+  else if (String(number).length < 10) {
+    callback(new Error('Number must be at least 10 digits'), []);
+  }
+  else {
+    this.inACall = true;
+                        //  hang up in a year
+    this.txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
+      this.inACall = false;
+      callback(err, data);
+    });
+  }
+}
+
+GPRS.prototype.hangUp = function(callback) {
+  /*
+  terminate a vouce call
+
+  args
+    callback
+      a callback function
+
+  callback parameters
+    err
+      error
+    data
+      reply upon hangup
+  */
+  this.txrx('ATH', 100000, callback);
 }
 
 GPRS.prototype.answerCall = function(callback) {
@@ -364,7 +397,7 @@ GPRS.prototype.ignoreCall = function(callback) {
     none
   */
 
-  var self = this;
+  self.postmaster.send('ATH')
 }
 
 GPRS.prototype.readSMS = function(index, mode, callback) {
