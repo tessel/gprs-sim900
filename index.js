@@ -187,7 +187,9 @@ GPRS.prototype.togglePower = function(callback) {
       self.power.high();
       setTimeout(function() {
         self.emit('powertoggled');
-        callback();
+        if (callback) {
+          callback();
+        }
       }, 5000);
     }, 1000);
   }, 100);
@@ -450,6 +452,7 @@ GPRS.prototype.notifyOn = function(pairs) {
   Object.keys(pairs).forEach(function(newKey) {
     //  note that this overwrites whatever may have been there
     self.notificationCallbacks[newKey] = pairs[newKey];
+    console.log('added function\n\t', pairs[newKey], '\nto notificationCallbacks under herader', [newKey], '\nnottifcationCallbacks:\n', self.notificationCallbacks);
   });
 }
 
@@ -465,16 +468,19 @@ GPRS.prototype.notify = function() {
   */
   var self = this;
   self.postmaster.on('unsolicited', function(err, data) {
-    //  on every unsolicted event
+    //  on every unsolicited event
+    console.log('got and unsolicited event with...\n\terr:\t', [err], '\n\tdata:\t', [data], '\n\tnotificationCallbacks:\n', self.notificationCallbacks);
     Object.keys(self.notificationCallbacks).forEach(function(key) {
+      console.log('checking against key', [key]);
       //  loop through the keys
-      var callThisFunction = false;
-      data.forEach(function(d) {
-        //  if the key is the first characters in some line
-        callThisFunction = callThisFunction || (d.indexOf(key) === 0);
-      });
-      if (callThisFunction) {
-        notificationCallbacks[key](err, data);
+      // var callThisFunction = false;
+      // data.forEach(function(d) {
+      //   //  if the key is the first characters in th
+      //   callThisFunction = callThisFunction || (d.indexOf(key) === 0);
+      // });
+      if (data.indexOf(key) === 0) { //callThisFunction) {
+        console.log('calling its function!');
+        self.notificationCallbacks[key](err, data);
       }
     })
   })
