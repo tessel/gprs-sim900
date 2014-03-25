@@ -380,26 +380,19 @@ GPRS.prototype.answerCall = function(callback) {
       callback function
 
   callback parameters
-    call
-      a call object
+    err
+      error
+    data
+      ['ATA', 'OK'] if all goes well
   */
 
   var self = this;
-}
-
-GPRS.prototype.ignoreCall = function(callback) {
-  /*
-  ignore an incoming voice call
-
-  args
-    callback
-      callback function
-
-  callback parameters
-    none
-  */
-
-  self.postmaster.send('ATH')
+  self.txrx('ATA', 10000, function(err, data) {
+    if (!err) {
+      self.inACall = true;
+    }
+    callback(err, data);
+  });
 }
 
 GPRS.prototype.readSMS = function(index, mode, callback) {
