@@ -1,7 +1,13 @@
+/*
+Documentation for the SIM900 module, including a full list of commands, can be found at: http://wm.sim.com/producten.aspx?id=1019
+The full AT command manual is here: http://wm.sim.com/downloaden.aspx?id=2986
+*/
+
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
+
 
 function GPRS (hardware, secondaryHardware, baud) {
   /*
@@ -25,15 +31,12 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
   self.inACall = false;
+  self.notificationCallbacks = {};
   //  the defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
 
   //  second debug port is optional and largely unnecessary
-  // self.debugHardware = null;
-  //  ring indicator can be useful, though
-  // self.ringIndicator = null;
-  // console.log('sech:\t', secondaryHardware);
-  if (secondaryHardware) {//arguments.length > 2) {
+  if (secondaryHardware) {
     self.debugHardware = secondaryHardware;
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
     self.ringIndicator = secondaryHardware.gpio(3);
@@ -42,7 +45,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   }
 }
 
-util.inherits(GPRS, EventEmitter)
+util.inherits(GPRS, EventEmitter);
 
 function use(hardware, debug, baud, callback) {
   /*
@@ -423,13 +426,71 @@ GPRS.prototype.readSMS = function(index, mode, callback) {
   this.txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
 }
 
+GPRS.prototype.notifyOn = function(pairs) {
+  /*
+  Many unsolicited events are very useful to the user, such as when an SMS is recieved or a call is pending.
+
+  args
+    pairs
+      object which maps unsolicited message headers (e.g. '+CMT'  whoch corresponds to text message recieved) to callback functions
+
+  callback parameters
+    none, but the given functions in pairs should accept the follwing arguments:
+      err
+        an error, if applicable
+      data
+        the text from the unsolicited event
+  */
+
+  var self = this;
+  if (Object.keys(self.notificationCallbacks).length === 0) {
+    //  this is the first time this was called, you shaould start notifying
+    self.notify();
+  }
+  Object.keys(pairs).forEach(function(newKey) {
+    //  note that this overwrites whatever may have been there
+    self.notificationCallbacks[newKey] = pairs[newKey];
+  });
+}
+
+GPRS.prototype.notify = function() {
+  /*
+  run through the notificationCallbacks every time an unsolicited message comes in and call the related functions
+
+  args
+    none (see notifyOn)
+
+  callback parameters
+    none, but err and data are passed to the callbacks in notificationCallbacks
+  */
+  var self = this;
+  self.postmaster.on('unsolicited', function(err, data) {
+    //  on every unsolicted event
+    Object.keys(self.notificationCallbacks).forEach(function(key) {
+      //  loop through the keys
+      var callThisFunction = false;
+      data.forEach(function(d) {
+        //  if the key is the first characters in some line
+        callThisFunction = callThisFunction || (d.indexOf(key) === 0);
+      });
+      if (callThisFunction) {
+        notificationCallbacks[key](err, data);
+      }
+    })
+  })
+}
+
 
 module.exports.GPRS = GPRS;
 module.exports.use = use;
 module.exports.txrx = txrx;
+module.exports.txrxchain = txrxchain;
+module.exports.togglePower = togglePower;
 module.exports.establishContact = establishContact;
 module.exports.sendSMS = sendSMS;
 module.exports.dial = dial;
+module.exports.hangUp = hangUp;
 module.exports.answerCall = answerCall;
-module.exports.ignoreCall = ignoreCall;
 module.exports.readSMS = readSMS;
+module.exports.notifyOn = notifyOn;
+module.exports.notify = notify;
