@@ -136,16 +136,13 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
 
   var self = this;
   if (messages.length != patiences.length || messages.length != replies.length) {
-    console.log('length mismatch');
     callback(new Error('array lengths must match'), false);
   }
   else {
     var intermediate = function(err, data) {
-      console.log('startng intermediate. e, r:', err, data)
       var correct = !err;
       if (replies[0]) {
         for (var i = 0; i < data.length; i++) {
-          console.log('di', data[i], 'r0i', replies[0][i])
           correct = correct && data[i] == replies[0][i];
         }
       }
