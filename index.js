@@ -33,6 +33,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.packetizer.packetize();
   self.inACall = false;
   self.notificationCallbacks = {};
+  self.powered = null;
   //  the defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
 
@@ -67,9 +68,9 @@ function use(hardware, debug, baud, callback) {
         Error, if any, while connecting. Passes null if successful.
   */
 
-  callback = callback || function() {;};
+  callback = callback || function dummyCallback() {;};
   var radio = new GPRS(hardware, debug, baud);
-  radio.establishContact(callback);
+  radio.establishContact(callback)
   return radio;
 }
 
@@ -79,7 +80,7 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
 
   Args
     message
-      Atring you're sending, ie 'AT'
+      String you're sending, ie 'AT'
     patience
       Milliseconds until we stop listening. It's likely that the module is no longer responding to any single event if the reponse comes too much after we ping it.
     callback
