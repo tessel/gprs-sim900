@@ -224,7 +224,9 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       if (err && err.type === 'timeout') {
         //  if we time out on AT, we're likely powered off
         //  toggle the power and try again
-        self.togglePower(self.establishContact(callback, rep + 1, reps));
+        self.togglePower(function tryAgainAfterToggle() {
+          self.establishContact(callback, rep + 1, reps)
+        });
       }
       else if (!err) {
         self.emit('ready');
