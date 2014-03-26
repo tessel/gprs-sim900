@@ -114,7 +114,7 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
   self.postmaster.send(message, patience, callback, alternate);
 }
 
-GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
+GPRS.prototype.chain = function(messages, patiences, replies, callback) {
   /*
   send a series of back-to-back messages recursively, do something with the final result. other results, if not of the form [<message>, <OK>] error out and pass false to the callback. args messages and patience must be of the same length.
 
@@ -155,7 +155,7 @@ GPRS.prototype.txrxchain = function(messages, patiences, replies, callback) {
       if (func === intermediate) {
         self.once('intermediate', function(correct) {
           if (correct) {
-            self.txrxchain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
+            self.chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
           }
           else {
             self.postmaster.forceClear();
@@ -276,7 +276,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     patiences = [2000, 5000, 5000];
     replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
-    self.txrxchain(commands, patiences, replies, function(err, data) {
+    self.chain(commands, patiences, replies, function(err, data) {
       //  manually check the last one
       var correct = !err && data[0] == message && data[1] == '> ';
       if (correct) {
@@ -455,7 +455,7 @@ GPRS.prototype.notify = function() {
 module.exports.GPRS = GPRS;
 module.exports.use = use;
 module.exports.txrx = txrx;
-module.exports.txrxchain = txrxchain;
+module.exports.chain = chain;
 module.exports.togglePower = togglePower;
 module.exports.establishContact = establishContact;
 module.exports.sendSMS = sendSMS;
