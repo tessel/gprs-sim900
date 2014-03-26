@@ -159,11 +159,11 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       console.log('sent', [message], 'on uart', [uart]);
     }
 
-    var reply = function(err, reply) {
+    var reply = function(err, data) {
       var temp = self.callback;
       self.callback = null;
       if (temp) {
-        temp(err, reply);
+        temp(err, data);
       }
     }
   

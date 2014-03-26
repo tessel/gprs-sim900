@@ -68,7 +68,6 @@ function use(hardware, debug, baud, callback) {
         Error, if any, while connecting. Passes null if successful.
   */
 
-  callback = callback || function dummyCallback() {;};
   var radio = new GPRS(hardware, debug, baud);
   radio.establishContact(callback)
   return radio;
@@ -204,48 +203,76 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
     err
       An error
     contacted
-      true/false
+      Reply from SIM900 module (Array of Strings) OR false if unable to contact
   */
 
   var self = this;
   rep = rep || 0;
   reps = reps || 5;
-  var patience = 1000; 
-  self.postmaster.send('AT', patience, function(err, data) {
-    //  too many tries = fail
-    if (rep > reps) {
-      var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
-      callback(new Error(mess));
-    }
-    //  if we timeout on an AT, we're probably powered off. Toggle the power button and try again
-    else if (err && err.type === 'timeout') {
-      self.togglePower();
-      self.once('powertoggled', function() {
-        self.establishContact(callback, rep + 1, reps);
-      });
-    }
-    //  this is where we want to be
-    else if (!err && data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
-      setTimeout(function() {
-        self.emit('ready');
-      }, 1500);
-      if (callback) {
-        callback(null);
+  var patience = 1000;
+  callback = callback || function dummyCallback(err, data) {
+    console.log(!err ? 'GPRS Module ready to command!' : 'Unable to contact GPRS Module.');
+  };
+
+  if (rep > reps) {
+    var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)';
+    callback(new Error(mess), false);
+  }
+  else {
+    self.txrx('AT', patience, function checkIfWeContacted(err, data) {
+      console.log('e\n', err, '\nd\n', data);
+      if (err && err.type === 'timeout') {
+        //  if we time out on AT, we're likely powered off
+        //  toggle the power and try again
+        self.togglePower(self.establishContact(callback, rep + 1, reps));
       }
-    }
-    else if (err && err.message != 'Postmaster busy') {
-      self.establishContact(callback, rep + 1, reps);
-    }
-    //  this is just to be sure errors (with UART, presumably) get thrown properly
-    else if (err) {
-      callback(err);
-    }
-    else {
-      setTimeout(function() {
-        self.establishContact(callback, rep + 1, reps);
-      }, 1500);
-    }
-  });
+      else if (!err) {
+        self.emit('ready');
+        if (callback) {
+          callback(err, data);
+        }
+      }
+      else if (callback) {
+        callback(err, data);
+      }
+    }, [['AT', '\\x00AT', '\x00AT'], ['OK'], 1]);
+  }
+
+  // self.postmaster.send('AT', patience, function(err, data) {
+  //   //  too many tries = fail
+  //   if (rep > reps) {
+  //     var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
+  //     callback(new Error(mess));
+  //   }
+  //   //  if we timeout on an AT, we're probably powered off. Toggle the power button and try again
+  //   else if (err && err.type === 'timeout') {
+  //     self.togglePower();
+  //     self.once('powertoggled', function() {
+  //       self.establishContact(callback, rep + 1, reps);
+  //     });
+  //   }
+  //   //  this is where we want to be
+  //   else if (!err && data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
+  //     setTimeout(function() {
+  //       self.emit('ready');
+  //     }, 1500);
+  //     if (callback) {
+  //       callback(null);
+  //     }
+  //   }
+  //   else if (err && err.message != 'Postmaster busy') {
+  //     self.establishContact(callback, rep + 1, reps);
+  //   }
+  //   //  this is just to be sure errors (with UART, presumably) get thrown properly
+  //   else if (err) {
+  //     callback(err);
+  //   }
+  //   else {
+  //     setTimeout(function() {
+  //       self.establishContact(callback, rep + 1, reps);
+  //     }, 1500);
+  //   }
+  // });
 }
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
