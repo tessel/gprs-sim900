@@ -32,7 +32,7 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
   self.inACall = false;
-  self.notificationCallbacks = {};
+  self.notificationCallbacks = {'_everyTime' : []};
   self.powered = null;
   //  the defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
@@ -143,7 +143,8 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
       var correct = !err;
       if (replies[0]) {
         for (var i = 0; i < data.length; i++) {
-          correct = correct && data[i] == replies[0][i];
+          //  allow start of transmission packets to be valid
+          correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
         }
       }
       self.emit('intermediate', correct);
@@ -159,6 +160,9 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
           }
           else {
             self.postmaster.forceClear();
+            if (callback) {
+              callback(new Error('chain broke on ' + messages[0]), false);
+            }
           }
         });
       }
@@ -220,7 +224,6 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   }
   else {
     self.txrx('AT', patience, function checkIfWeContacted(err, data) {
-      console.log('e\n', err, '\nd\n', data);
       if (err && err.type === 'timeout') {
         //  if we time out on AT, we're likely powered off
         //  toggle the power and try again
@@ -235,7 +238,7 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
         }
       }
       else if (callback) {
-        callback(err, data);
+        callback(err, false);
       }
     }, [['AT', '\\x00AT', '\x00AT'], ['OK'], 1]);
   }
@@ -257,7 +260,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     err
       Error
     success
-      Did it send properly? If yes, get back the ID number of the text, if not, the error and -1 as the ID.
+      Did it send properly? If yes, get back the ID number of the text in an array, if not, the error and -1 as the ID.
   */
 
   if (!number) {
@@ -273,17 +276,22 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     self.chain(commands, patiences, replies, function(err, data) {
       //  manually check the last one
       var correct = !err && data[0] == message && data[1] == '> ';
+      var id = -1;
+      var err = err || new Error('Unable to send SMS');
       if (correct) {
         self.txrx(new Buffer([0x1a]), 10000, function(err, data) {
-          var id = -1;
-          var err = err || new Error('Unable to send SMS');
           if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
             //  message sent!
             id = parseInt(data[0].slice(7), 10);
             err = null;
           }
-          callback(err, id);
+          if (callback) {
+            callback(err, [id]);
+          }
         }, [['+CMGS: ', 'ERROR'], ['OK', 'ERROR'], 1]);
+      }
+      else if (callback) {
+        callback(err, [id]);
       }
     });
   }
@@ -396,51 +404,62 @@ GPRS.prototype.readSMS = function(index, mode, callback) {
   this.txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
 }
 
-GPRS.prototype.notifyOn = function(pairs) {
+GPRS.prototype.notifyOn = function(pairs, everyTime) {
   /*
   Many unsolicited events are very useful to the user, such as when an SMS is recieved or a call is pending.
 
   Args
     pairs
       An Object which maps unsolicited message header Strings (e.g. '+CMT' = text message recieved) to callback functions.
+    everyTime
+      An Array of functions to call for every unsolicited message 
 
   Callback parameters
-    None, but the given functions in pairs should accept the follwing arguments:
-      err
-        An error, if applicable
+    None, but the given functions in pairs should accept:
       data
         The text from the unsolicited packet
   */
 
   var self = this;
-  if (Object.keys(self.notificationCallbacks).length === 0) {
-    //  this is the first time this was called, you shaould start notifying
+  if (Object.keys(self.notificationCallbacks).length < 2) {
+    //  this is the first time this was called, you should start notifying
     self.notify();
   }
   Object.keys(pairs).forEach(function(newKey) {
     //  note that this overwrites whatever may have been there
     self.notificationCallbacks[newKey] = pairs[newKey];
   });
+  if (everyTime) {
+    everyTime.forEach(function(newKey) {
+      //  note that this overwrites whatever may have been there
+      self.notificationCallbacks._everyTime.push(newKey);
+    });
+  }
 }
 
-GPRS.prototype.notify = function() {
+GPRS.prototype.notify = function(funcs) {
   /*
   Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions
 
   Args
-    None (see notifyOn)
+    none - see notifyOn
+
 
   Callback parameters
     None, but err and data are passed to the callbacks in notificationCallbacks
   */
 
   var self = this;
-  self.postmaster.on('unsolicited', function(err, data) {
-    //  on every unsolicited event
+  self.postmaster.on('unsolicited', function(data) {
+    //  on selected unsolicited events
     Object.keys(self.notificationCallbacks).forEach(function(key) {
-      if (data.indexOf(key) === 0) { //callThisFunction) {
-        self.notificationCallbacks[key](err, data);
+      if (data && data.indexOf(key) === 0) { //callThisFunction) {
+        self.notificationCallbacks[key](data);
       }
+    });
+    //  on every unsolicited event
+    self.notificationCallbacks._everyTime.forEach(function(func) {
+      func(data);
     });
   });
 }

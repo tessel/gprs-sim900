@@ -8,7 +8,7 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 
-function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
+function Postmaster (myPacketizer, enders, overflow, size, debug) {
   /*
   Constructor for the postmaster
 
@@ -17,8 +17,6 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
       A packetizer to listen to
     enders
       An Array of Strings that constitute the end of a post
-    unsolicited
-      A callback function to call when an unsolicited packet comes in. Callback args are err and data
     overflow
       A callback function to call when the message buffer overflows. Callback args are err and data
     size
@@ -42,14 +40,6 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
     }
     else {
       console.log('overflow!\n', arg);
-    };
-  }
-  unsolicited = unsolicited || function(err, arg) { 
-    if (err) {
-      console.log('err:\n', err);
-    }
-    else {
-      console.log('unsolicited:\n', arg);
     };
   }
   size = size || 15;
@@ -77,8 +67,8 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
         }
         return data.indexOf(partialStart) === -1;
       }).length != self.alternate[0].length)) {
-      //  check that we're not using soft logic either...
-      self.emit('unsolicited', null, data); 
+      //  ^check that we're not using soft logic either...
+      self.emit('unsolicited', data); 
     }
     else {
       if (self.debug) {
@@ -109,7 +99,6 @@ function Postmaster (myPacketizer, enders, unsolicited, overflow, size, debug) {
   });
 
   this.on('overflow', overflow);
-  this.on('unsolicited', unsolicited);
 }
 
 util.inherits(Postmaster, EventEmitter);
@@ -185,7 +174,8 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
 Postmaster.prototype.forceClear = function(type)
 {
   //  Reset the postmaster to its default state, emit what you have as unsolicited
-  this.emit(type || 'unsolicited', null, RXQueue);
+  tpye = type || 'unsolicited';
+  this.emit(type, RXQueue);
   this.RXQueue = [];
   this.callback = null;
   this.message = '';
