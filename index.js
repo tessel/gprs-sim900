@@ -237,42 +237,6 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       }
     }, [['AT', '\\x00AT', '\x00AT'], ['OK'], 1]);
   }
-
-  // self.postmaster.send('AT', patience, function(err, data) {
-  //   //  too many tries = fail
-  //   if (rep > reps) {
-  //     var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)'
-  //     callback(new Error(mess));
-  //   }
-  //   //  if we timeout on an AT, we're probably powered off. Toggle the power button and try again
-  //   else if (err && err.type === 'timeout') {
-  //     self.togglePower();
-  //     self.once('powertoggled', function() {
-  //       self.establishContact(callback, rep + 1, reps);
-  //     });
-  //   }
-  //   //  this is where we want to be
-  //   else if (!err && data.length === 2 && data[0] === 'AT' && data[1] === 'OK') {
-  //     setTimeout(function() {
-  //       self.emit('ready');
-  //     }, 1500);
-  //     if (callback) {
-  //       callback(null);
-  //     }
-  //   }
-  //   else if (err && err.message != 'Postmaster busy') {
-  //     self.establishContact(callback, rep + 1, reps);
-  //   }
-  //   //  this is just to be sure errors (with UART, presumably) get thrown properly
-  //   else if (err) {
-  //     callback(err);
-  //   }
-  //   else {
-  //     setTimeout(function() {
-  //       self.establishContact(callback, rep + 1, reps);
-  //     }, 1500);
-  //   }
-  // });
 }
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
