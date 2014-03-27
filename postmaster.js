@@ -109,7 +109,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
   
   args
     message
-      What to send
+      What to send (String or Buffer)
     callback
       The callback function to call with the resulting data
     patience
