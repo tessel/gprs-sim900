@@ -5,7 +5,7 @@ Driver for the gprs-sim900 Tessel GPRS/SIM module ([SIM900](ftp://imall.iteadstu
 
 The GPRS module requries some setup in hardware in order to function properly. The image below highlights portions of the module users may need to configure.
 
-![GPRS module with important parts highlighted](./gprs.jpg)
+![GPRS module with important parts highlighted](https://s3.amazonaws.com/technicalmachine-assets/doc+pictures/gprs.jpg)
 
 Clockwise from the bottom left:
 
