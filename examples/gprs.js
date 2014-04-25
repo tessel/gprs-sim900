@@ -7,10 +7,10 @@ var gprs = require('../').use(hardware);
 var handlePlus = function(data) {
   console.log('\nGot an unsolicited message!\n\t', data);
 };
-var powerDaemon = function(data) {
+var powerDaemon = function() {
   gprs.emit('powered off');
-  console.log('The GPRS Module is off now.')
-}
+  console.log('The GPRS Module is off now.');
+};
 gprs.notifyOn({'+' : handlePlus, 'NORMAL POWER DOWN' : powerDaemon});
 
 gprs.on('ready', function() {
@@ -21,7 +21,7 @@ gprs.on('ready', function() {
       if (data[0] != -1) {
         console.log('Reply from the SIM900 (text number):\t', data);
       }
-    }
+    };
     //  Replce the #s with the String representation of 10+ digit number
     //  (hint: the U.S.'s country code is 1)
     console.log('Trying to send an SMS now');
