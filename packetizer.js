@@ -15,10 +15,11 @@ function decode(array) {
   var decoded = '';
   for (var i = 0; i < array.length; i++)
   {
-    if (array[i] == 10 || array[i] == 13) 
+    if (array[i] == 10 || array[i] == 13) {
       decoded += '\n';    // not technically true
-    else
+    } else {
       decoded += String.fromCharCode(array[i]);
+    }
   }
   return decoded; 
 }
@@ -77,7 +78,7 @@ util.inherits(Packetizer, EventEmitter);
 
 Packetizer.prototype.getPacketCount = function() {
   return this.packetNumber;
-}
+};
 
 Packetizer.prototype.bufferSize = function(len) {
   /*
@@ -95,7 +96,7 @@ Packetizer.prototype.bufferSize = function(len) {
     this.maxBufferSize = len;
   }
   return this.maxBufferSize;
-}
+};
 
 Packetizer.prototype.getLatestPackets = function(num) {
   /*
@@ -115,7 +116,7 @@ Packetizer.prototype.getLatestPackets = function(num) {
     packets.push(this.messages[i]);
   }
   return packets;
-}
+};
 
 Packetizer.prototype.checkBlacklist = function(data) {
   /*
@@ -134,7 +135,7 @@ Packetizer.prototype.checkBlacklist = function(data) {
   //   return item == data;
   // });
   return (this.blacklist.indexOf(data) > -1);
-}
+};
 
 Packetizer.prototype.packetize = function() {
   var self = this;
@@ -148,7 +149,7 @@ Packetizer.prototype.packetize = function() {
             ! self.checkBlacklist(self.latestMessage))
         {
           //  we don't want "empty" or blacklisted packets
-          self.emit('packet', self.latestMessage)
+          self.emit('packet', self.latestMessage);
           // console.log('--> emitting',  self.latestMessage);
           self.messages.push(self.latestMessage);
           self.packetNumber++;
@@ -171,6 +172,6 @@ Packetizer.prototype.packetize = function() {
       }
     }
   });
-}
+};
 
 module.exports = Packetizer;
