@@ -6,7 +6,6 @@ to route them appropriately.
 
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
-var Packetizer = require('./packetizer.js');
 
 function Postmaster (myPacketizer, enders, overflow, size, debug) {
   /*
@@ -37,11 +36,10 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
   overflow = overflow || function(err, arg) { 
     if (err) {
       console.log('err: ', err);
-    }
-    else {
+    } else {
       console.log('overflow!\n', arg);
-    };
-  }
+    }
+  };
   size = size || 15;
 
   var self = this;
@@ -130,10 +128,9 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
   var self = this;
   self.debug = debug || false;
 
-  if (self.callback != null) {
+  if (self.callback !== null) {
     callback(new Error('Postmaster busy'), []);
-  }
-  else {
+  } else {
     if (alternate) {
       self.alternate = alternate;
     }
@@ -145,7 +142,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     self.uart.write(message);
     self.uart.write('\r\n');
     if (self.debug) {
-      console.log('sent', [message], 'on uart', [uart]);
+      console.log('sent', [message], 'on uart', [self.uart]);
     }
 
     var reply = function(err, data) {
@@ -154,7 +151,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       if (temp) {
         temp(err, data);
       }
-    }
+    };
   
     //  if we time out
     var panic = setTimeout(function() {
@@ -169,20 +166,20 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       reply(err, data);
     });
   }
-}
+};
 
-Postmaster.prototype.forceClear = function(type)
+Postmaster.prototype.forceClear = function(typ)
 {
   //  Reset the postmaster to its default state, emit what you have as unsolicited
-  tpye = type || 'unsolicited';
-  this.emit(type, RXQueue);
+  var type = typ || 'unsolicited';
+  this.emit(type, this.RXQueue);
   this.RXQueue = [];
   this.callback = null;
   this.message = '';
   this.started = false;
   this.alternate = null;
   this.enders = ['OK', 'ERROR'];
-}
+};
 
 
 module.exports = Postmaster;
