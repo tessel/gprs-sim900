@@ -69,7 +69,7 @@ function use(hardware, debug, baud, callback) {
   */
 
   var radio = new GPRS(hardware, debug, baud);
-  radio.establishContact(callback)
+  radio.establishContact(callback);
   return radio;
 }
 
@@ -102,17 +102,16 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
   callback = callback || ( function(err, arg) { 
     if (err) {
       console.log('err:\n', err);
-    }
-    else {
+    } else {
       console.log('reply:\n', arg);
-    };
+    }
   });
   alternate = alternate || null;
   //  it's a virtue, but mostly the module won't work if you're impatient
   patience = Math.max(patience, 100);
 
   self.postmaster.send(message, patience, callback, alternate);
-}
+};
 
 GPRS.prototype.chain = function(messages, patiences, replies, callback) {
   /*
@@ -137,8 +136,7 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
   var self = this;
   if (messages.length != patiences.length || messages.length != replies.length) {
     callback(new Error('array lengths must match'), false);
-  }
-  else {
+  } else {
     var intermediate = function(err, data) {
       var correct = !err;
       if (replies[0]) {
@@ -148,7 +146,7 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
         }
       }
       self.emit('intermediate', correct);
-    }
+    };
     //  not yet to the callback
     if (messages.length > 0) {
       var func = (messages.length === 1) ? callback:intermediate;
@@ -157,8 +155,7 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
         self.once('intermediate', function(correct) {
           if (correct) {
             self.chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
-          }
-          else {
+          } else {
             self.postmaster.forceClear();
             if (callback) {
               callback(new Error('chain broke on ' + messages[0]), false);
@@ -168,7 +165,7 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
       }
     }
   }
-}
+};
 
 GPRS.prototype.togglePower = function(callback) {
   /*
@@ -189,7 +186,7 @@ GPRS.prototype.togglePower = function(callback) {
       }, 5000);
     }, 1000);
   }, 100);
-}
+};
 
 GPRS.prototype.establishContact = function(callback, rep, reps) {
   /*
@@ -214,35 +211,32 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
   rep = rep || 0;
   reps = reps || 5;
   var patience = 1000;
-  callback = callback || function dummyCallback(err, data) {
+  callback = callback || function dummyCallback(err) {
     console.log(!err ? 'GPRS Module ready to command!' : 'Unable to contact GPRS Module.');
   };
 
   if (rep > reps) {
     var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)';
     callback(new Error(mess), false);
-  }
-  else {
+  } else {
     self.txrx('AT', patience, function checkIfWeContacted(err, data) {
       if (err && err.type === 'timeout') {
         //  if we time out on AT, we're likely powered off
         //  toggle the power and try again
         self.togglePower(function tryAgainAfterToggle() {
-          self.establishContact(callback, rep + 1, reps)
+          self.establishContact(callback, rep + 1, reps);
         });
-      }
-      else if (!err) {
+      } else if (!err) {
         self.emit('ready');
         if (callback) {
           callback(err, data);
         }
-      }
-      else if (callback) {
+      } else if (callback) {
         callback(err, false);
       }
     }, [['AT', '\\x00AT', '\x00AT'], ['OK'], 1]);
   }
-}
+};
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
   /*
@@ -265,19 +259,18 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 
   if (!number) {
     callback(new Error('Did not specify a 10+ digit number'), null);
-  }
-  else {
+  } else {
     var self = this;
     message = message || 'text from a Tessel';
-    commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
-    patiences = [2000, 5000, 5000];
-    replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
+    var commands  = ['AT+CMGF=1', 'AT+CMGS="' + number + '"', message];
+    var patiences = [2000, 5000, 5000];
+    var replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
-    self.chain(commands, patiences, replies, function(err, data) {
+    self.chain(commands, patiences, replies, function(errr, data) {
       //  manually check the last one
-      var correct = !err && data[0] == message && data[1] == '> ';
+      var correct = !errr && data[0] == message && data[1] == '> ';
       var id = -1;
-      var err = err || new Error('Unable to send SMS');
+      var err = errr || new Error('Unable to send SMS');
       if (correct) {
         self.txrx(new Buffer([0x1a]), 10000, function(err, data) {
           if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
@@ -289,13 +282,12 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
             callback(err, [id]);
           }
         }, [['+CMGS: ', 'ERROR'], ['OK', 'ERROR'], 1]);
-      }
-      else if (callback) {
+      } else if (callback) {
         callback(err, [id]);
       }
     });
   }
-}
+};
 
 GPRS.prototype.dial = function(number, callback) {
   /*
@@ -316,11 +308,9 @@ GPRS.prototype.dial = function(number, callback) {
 
   if (this.inACall) {
     callback(new Error('Currently in a call'), []);
-  }
-  else if (!number || String(number).length < 10) {
+  } else if (!number || String(number).length < 10) {
     callback(new Error('Number must be at least 10 digits'), []);
-  }
-  else {
+  } else {
     this.inACall = true;
                                 //  hang up in a year
     this.txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
@@ -328,7 +318,7 @@ GPRS.prototype.dial = function(number, callback) {
       callback(err, data);
     });
   }
-}
+};
 
 GPRS.prototype.hangUp = function(callback) {
   /*
@@ -350,7 +340,7 @@ GPRS.prototype.hangUp = function(callback) {
     self.inACall = false;
     callback(err, data);
   });
-}
+};
 
 GPRS.prototype.answerCall = function(callback) {
   /*
@@ -374,7 +364,7 @@ GPRS.prototype.answerCall = function(callback) {
     }
     callback(err, data);
   });
-}
+};
 
 GPRS.prototype.readSMS = function(index, mode, callback) {
   /*
@@ -402,7 +392,7 @@ GPRS.prototype.readSMS = function(index, mode, callback) {
   */
 
   this.txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
-}
+};
 
 GPRS.prototype.notifyOn = function(pairs, everyTime) {
   /*
@@ -435,15 +425,14 @@ GPRS.prototype.notifyOn = function(pairs, everyTime) {
       self.notificationCallbacks._everyTime.push(newKey);
     });
   }
-}
+};
 
-GPRS.prototype.notify = function(funcs) {
+GPRS.prototype.notify = function() {
   /*
   Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions
 
   Args
     none - see notifyOn
-
 
   Callback parameters
     None, but err and data are passed to the callbacks in notificationCallbacks
@@ -462,19 +451,8 @@ GPRS.prototype.notify = function(funcs) {
       func(data);
     });
   });
-}
+};
 
 
 module.exports.GPRS = GPRS;
 module.exports.use = use;
-module.exports.txrx = txrx;
-module.exports.chain = chain;
-module.exports.togglePower = togglePower;
-module.exports.establishContact = establishContact;
-module.exports.sendSMS = sendSMS;
-module.exports.dial = dial;
-module.exports.hangUp = hangUp;
-module.exports.answerCall = answerCall;
-module.exports.readSMS = readSMS;
-module.exports.notifyOn = notifyOn;
-module.exports.notify = notify;
