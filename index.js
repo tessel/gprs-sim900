@@ -49,30 +49,6 @@ function GPRS (hardware, secondaryHardware, baud) {
 
 util.inherits(GPRS, EventEmitter);
 
-function use(hardware, debug, baud, callback) {
-  /*
-  Connect the GPRS module and establish contact with the SIM900
-
-  Args
-    hardware
-      The Tessel port to use for the main GPRS hardware
-    debug
-      The debug port, if any, to use (null most of the time).
-    baud
-      Alternate baud rate for the UART
-    callback
-      Callback frunction for once the module is set up
-
-    Callback parameters
-      err
-        Error, if any, while connecting. Passes null if successful.
-  */
-
-  var radio = new GPRS(hardware, debug, baud);
-  radio.establishContact(callback);
-  return radio;
-}
-
 GPRS.prototype.txrx = function(message, patience, callback, alternate) {
   /*
   every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
@@ -94,12 +70,12 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
     recieved
       Ehe reply recieved within the interval
   */
-  
+
   var self = this;
 
   message  = message  || 'AT';
   patience = patience || 250;
-  callback = callback || ( function(err, arg) { 
+  callback = callback || ( function(err, arg) {
     if (err) {
       console.log('err:\n', err);
     } else {
@@ -111,6 +87,30 @@ GPRS.prototype.txrx = function(message, patience, callback, alternate) {
   patience = Math.max(patience, 100);
 
   self.postmaster.send(message, patience, callback, alternate);
+};
+
+GPRS.prototype.answerCall = function(callback) {
+  /*
+  answer an incoming voice call
+
+  Args
+    callback
+      Callback function
+
+  Callback parameters
+    err
+      Error
+    data
+      ['ATA', 'OK'] if all goes well
+  */
+
+  var self = this;
+  self.txrx('ATA', 10000, function(err, data) {
+    if (!err) {
+      self.inACall = true;
+    }
+    callback(err, data);
+  });
 };
 
 GPRS.prototype.chain = function(messages, patiences, replies, callback) {
@@ -167,25 +167,35 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
   }
 };
 
-GPRS.prototype.togglePower = function(callback) {
+GPRS.prototype.dial = function(number, callback) {
   /*
-  Turn the module on or off by switching the power buton (G3) electronically
+  Call the specified number (voice call, not data call)
+
+  Args
+    number
+      String representation of the number. Must be at least 10 digits
+    callback
+      Callback function
+
+  Callback parameters
+    err
+      Error, if applicable
+    data
+      [command echo, 'OK'] if all goes well
   */
 
-  var self = this;
-  self.power.high();
-  setTimeout(function() {
-    self.power.low();
-    setTimeout(function() {
-      self.power.high();
-      setTimeout(function() {
-        self.emit('powertoggled');
-        if (callback) {
-          callback();
-        }
-      }, 5000);
-    }, 1000);
-  }, 100);
+  if (this.inACall) {
+    callback(new Error('Currently in a call'), []);
+  } else if (!number || String(number).length < 10) {
+    callback(new Error('Number must be at least 10 digits'), []);
+  } else {
+    this.inACall = true;
+                                //  hang up in a year
+    this.txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
+      this.inACall = false;
+      callback(err, data);
+    });
+  }
 };
 
 GPRS.prototype.establishContact = function(callback, rep, reps) {
@@ -236,6 +246,115 @@ GPRS.prototype.establishContact = function(callback, rep, reps) {
       }
     }, [['AT', '\\x00AT', '\x00AT'], ['OK'], 1]);
   }
+};
+
+GPRS.prototype.hangUp = function(callback) {
+  /*
+  terminate a voice call
+
+  Args
+    callback
+      Callback function
+
+  Callback parameters
+    err
+      Error
+    data
+      Reply upon hangup, hopefully ['ATH', 'OK']
+  */
+
+  var self = this;
+  this.txrx('ATH', 100000, function(err, data) {
+    self.inACall = false;
+    callback(err, data);
+  });
+};
+
+GPRS.prototype.notify = function() {
+  /*
+  Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions
+
+  Args
+    none - see notifyOn
+
+  Callback parameters
+    None, but err and data are passed to the callbacks in notificationCallbacks
+  */
+
+  var self = this;
+  self.postmaster.on('unsolicited', function(data) {
+    //  on selected unsolicited events
+    Object.keys(self.notificationCallbacks).forEach(function(key) {
+      if (data && data.indexOf(key) === 0) { //callThisFunction) {
+        self.notificationCallbacks[key](data);
+      }
+    });
+    //  on every unsolicited event
+    self.notificationCallbacks._everyTime.forEach(function(func) {
+      func(data);
+    });
+  });
+};
+
+GPRS.prototype.notifyOn = function(pairs, everyTime) {
+  /*
+  Many unsolicited events are very useful to the user, such as when an SMS is recieved or a call is pending.
+
+  Args
+    pairs
+      An Object which maps unsolicited message header Strings (e.g. '+CMT' = text message recieved) to callback functions.
+    everyTime
+      An Array of functions to call for every unsolicited message
+
+  Callback parameters
+    None, but the given functions in pairs should accept:
+      data
+        The text from the unsolicited packet
+  */
+
+  var self = this;
+  if (Object.keys(self.notificationCallbacks).length < 2) {
+    //  this is the first time this was called, you should start notifying
+    self.notify();
+  }
+  Object.keys(pairs).forEach(function(newKey) {
+    //  note that this overwrites whatever may have been there
+    self.notificationCallbacks[newKey] = pairs[newKey];
+  });
+  if (everyTime) {
+    everyTime.forEach(function(newKey) {
+      //  note that this overwrites whatever may have been there
+      self.notificationCallbacks._everyTime.push(newKey);
+    });
+  }
+};
+
+GPRS.prototype.readSMS = function(index, mode, callback) {
+  /*
+  Read the specified SMS
+
+  args - two possibilities
+    index
+      The index of the message to read. If not specified, the newest message is read. Note that the SIM900 is 1-indexed, not 0-indexed.
+    mode
+      0 - Mark the message as read
+      1 - Do not chage the status of the message
+    callback
+      Callback function
+
+  Callback parameters
+    err
+      Error
+    message
+      An array with
+        0 - Command echo
+        1 - Message information (read state, soure number, date, etc.)
+        2 - Message text
+        3 - 'OK'
+      if successful
+  */
+
+  this.txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
 };
 
 GPRS.prototype.sendSMS = function(number, message, callback) {
@@ -289,170 +408,50 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   }
 };
 
-GPRS.prototype.dial = function(number, callback) {
+GPRS.prototype.togglePower = function(callback) {
   /*
-  Call the specified number (voice call, not data call)
-
-  Args
-    number
-      String representation of the number. Must be at least 10 digits
-    callback
-      Callback function
-
-  Callback parameters
-    err
-      Error, if applicable
-    data
-      [command echo, 'OK'] if all goes well
-  */
-
-  if (this.inACall) {
-    callback(new Error('Currently in a call'), []);
-  } else if (!number || String(number).length < 10) {
-    callback(new Error('Number must be at least 10 digits'), []);
-  } else {
-    this.inACall = true;
-                                //  hang up in a year
-    this.txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
-      this.inACall = false;
-      callback(err, data);
-    });
-  }
-};
-
-GPRS.prototype.hangUp = function(callback) {
-  /*
-  terminate a voice call
-
-  Args
-    callback
-      Callback function
-
-  Callback parameters
-    err
-      Error
-    data
-      Reply upon hangup, hopefully ['ATH', 'OK']
+  Turn the module on or off by switching the power buton (G3) electronically
   */
 
   var self = this;
-  this.txrx('ATH', 100000, function(err, data) {
-    self.inACall = false;
-    callback(err, data);
-  });
+  self.power.high();
+  setTimeout(function() {
+    self.power.low();
+    setTimeout(function() {
+      self.power.high();
+      setTimeout(function() {
+        self.emit('powertoggled');
+        if (callback) {
+          callback();
+        }
+      }, 5000);
+    }, 1000);
+  }, 100);
 };
 
-GPRS.prototype.answerCall = function(callback) {
+function use(hardware, debug, baud, callback) {
   /*
-  answer an incoming voice call
+  Connect the GPRS module and establish contact with the SIM900
 
   Args
+    hardware
+      The Tessel port to use for the main GPRS hardware
+    debug
+      The debug port, if any, to use (null most of the time).
+    baud
+      Alternate baud rate for the UART
     callback
-      Callback function
+      Callback frunction for once the module is set up
 
-  Callback parameters
-    err
-      Error
-    data
-      ['ATA', 'OK'] if all goes well
+    Callback parameters
+      err
+        Error, if any, while connecting. Passes null if successful.
   */
 
-  var self = this;
-  self.txrx('ATA', 10000, function(err, data) {
-    if (!err) {
-      self.inACall = true;
-    }
-    callback(err, data);
-  });
-};
-
-GPRS.prototype.readSMS = function(index, mode, callback) {
-  /*
-  Read the specified SMS
-
-  args - two possibilities
-    index
-      The index of the message to read. If not specified, the newest message is read. Note that the SIM900 is 1-indexed, not 0-indexed.
-    mode
-      0 - Mark the message as read
-      1 - Do not chage the status of the message
-    callback
-      Callback function
-
-  Callback parameters
-    err
-      Error
-    message
-      An array with
-        0 - Command echo
-        1 - Message information (read state, soure number, date, etc.)
-        2 - Message text
-        3 - 'OK'
-      if successful
-  */
-
-  this.txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
-};
-
-GPRS.prototype.notifyOn = function(pairs, everyTime) {
-  /*
-  Many unsolicited events are very useful to the user, such as when an SMS is recieved or a call is pending.
-
-  Args
-    pairs
-      An Object which maps unsolicited message header Strings (e.g. '+CMT' = text message recieved) to callback functions.
-    everyTime
-      An Array of functions to call for every unsolicited message 
-
-  Callback parameters
-    None, but the given functions in pairs should accept:
-      data
-        The text from the unsolicited packet
-  */
-
-  var self = this;
-  if (Object.keys(self.notificationCallbacks).length < 2) {
-    //  this is the first time this was called, you should start notifying
-    self.notify();
-  }
-  Object.keys(pairs).forEach(function(newKey) {
-    //  note that this overwrites whatever may have been there
-    self.notificationCallbacks[newKey] = pairs[newKey];
-  });
-  if (everyTime) {
-    everyTime.forEach(function(newKey) {
-      //  note that this overwrites whatever may have been there
-      self.notificationCallbacks._everyTime.push(newKey);
-    });
-  }
-};
-
-GPRS.prototype.notify = function() {
-  /*
-  Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions
-
-  Args
-    none - see notifyOn
-
-  Callback parameters
-    None, but err and data are passed to the callbacks in notificationCallbacks
-  */
-
-  var self = this;
-  self.postmaster.on('unsolicited', function(data) {
-    //  on selected unsolicited events
-    Object.keys(self.notificationCallbacks).forEach(function(key) {
-      if (data && data.indexOf(key) === 0) { //callThisFunction) {
-        self.notificationCallbacks[key](data);
-      }
-    });
-    //  on every unsolicited event
-    self.notificationCallbacks._everyTime.forEach(function(func) {
-      func(data);
-    });
-  });
-};
-
+  var radio = new GPRS(hardware, debug, baud);
+  radio.establishContact(callback);
+  return radio;
+}
 
 module.exports.GPRS = GPRS;
 module.exports.use = use;
