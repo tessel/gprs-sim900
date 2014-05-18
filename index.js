@@ -289,7 +289,7 @@ GPRS.prototype.notify = function() {
   });
 };
 
-// Many unsolicited events are very useful to the user, such as when an SMS is recieved or a call is pending.
+// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending.
 GPRS.prototype.notifyOn = function(pairs, everyTime) {
   /*
   Args
@@ -398,7 +398,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
   }
 };
 
-// Turn the module on or off by switching the power buton (G3) electronically
+// Turn the module on or off by switching the power button (G3) electronically
 GPRS.prototype.togglePower = function(callback) {
   var self = this;
   self.power.high();

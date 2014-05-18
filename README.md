@@ -115,7 +115,23 @@ setInterval(function () {
 ```
 ## Methods
 
-##### * 
+##### * `gprs.answerCall(callback(err, data))` Answer an incoming voice call.
+
+##### * `gprs.chain(messages, patiences, replies, callback(err, data))` Send a series of back-to-back messages recursively, do something with the final result. other results, if not of the form [<message>, <OK>] error out and pass false to the callback. args messages and patience must be of the same length.
+
+##### * `gprs.dial(number, callback(err, data))` Call the specified number (voice call, not data call).
+
+##### * `gprs.hangUp(callback(err, data))` Terminate a voice call.
+
+##### * `gprs.notify()` Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions.
+
+##### * `gprs.notifyOn(pairs, everyTime)` Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending.
+
+##### * `gprs.readSMS(index, mode, callback(err, message))` Read the specified SMS.
+
+##### * `gprs.sendSMS(number, message, callback(err, data))` Send an SMS to the specified number.
+
+##### * `gprs.togglePower(callback())` Turn the module on or off.
 
 ## Events
 
