@@ -1,9 +1,9 @@
 var tessel = require('tessel');
-var hardware = tessel.port('d');
+var hardware = tessel.port('A');
 
 var gprs = require('../').use(hardware);
 
-//  handle some unsolicited messages
+//  Handle some unsolicited messages
 var handlePlus = function(data) {
   console.log('\nGot an unsolicited message!\n\t', data);
 };
@@ -41,7 +41,7 @@ gprs.on('ready', function() {
   });
 });
 
-//  do some blinky to show we're alive
+// Do some blinky to show we're alive
 var led1 = tessel.led(1).output().high();
 var led2 = tessel.led(2).output().low();
 setInterval(function () {

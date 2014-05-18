@@ -13,11 +13,11 @@ Clockwise from the bottom left:
 
 Put a SIM card here if you want to make calls, send SMS, etc.. When correctly inserted, the notched corner of the card will be closest to the SIM900.
 
-### Power and Reset buttons (dark blue) 
+### Power and Reset buttons (dark blue)
 
 The power button, also connected to GPIO3, can be used to turn the module on and off by pressing and holding the button for approximately one second. The Reset button can be used to force the module to undergo a hard reset.
 
-### Expansion jumpers (light blue) 
+### Expansion jumpers (light blue)
 
 These three jumpers are what control whether or not the GPRS module uses both module ports. When the jumpers are connected (**not** as shown in the image), the module will use both ports.
 
@@ -27,9 +27,9 @@ The pinout for the jumpers is as follows (top to bottom):
 
 * **Ring indicator** - This signal is routed to GPIO3 on the second module port when connected. It is asserted low by the SIM900 module when a call comes in or when an SMS is recieved.
 
-* **Debug TX** - This UART port talks at 115200 baud and is used only to upgrade the firmware on the SIM900 module. We haven't ever used it and doubt anyone else will, but better to break it out and not need it than the alternative. 
+* **Debug TX** - This UART port talks at 115200 baud and is used only to upgrade the firmware on the SIM900 module. We haven't ever used it and doubt anyone else will, but better to break it out and not need it than the alternative.
 
-* **Debug RX** - This UART port talks at 115200 baud and is used only to upgrade the firmware on the SIM900 module. We haven't ever used it and doubt anyone else will, but better to break it out and not need it than the alternative. 
+* **Debug RX** - This UART port talks at 115200 baud and is used only to upgrade the firmware on the SIM900 module. We haven't ever used it and doubt anyone else will, but better to break it out and not need it than the alternative.
 
 ### Antenna connector (yellow)
 
@@ -37,9 +37,9 @@ This is where the antenna (black rectangle with a black wire whip) connects to t
 
 ### Input power select header (green)
 
-This header controls which power source the GPRS module uses to power the SIM900 module. The module will not work unless the pins are bridged in one of two ways: 
+This header controls which power source the GPRS module uses to power the SIM900 module. The module will not work unless the pins are bridged in one of two ways:
 
-* When the jumper (not pictured) is bridging the *top* two pins, the module uses Tessel's 3.3 V rail to power the SIM900. 
+* When the jumper (not pictured) is bridging the *top* two pins, the module uses Tessel's 3.3 V rail to power the SIM900.
 * When the jumper is positioned such that the *bottom* two pins are connected, the SIM900 is powered off external power and the regulator on the GPRS module itself, which is tuned to ~3.465 V. When available, external power should be used to power the module.
 
 If the pins are not connected in either of those ways, the GPRS module will not turn on.
@@ -62,9 +62,64 @@ npm install gprs-sim900
 ```
 ## Example
 ```js
-exactly the contents of examples/gprs.js but the importation line should refer to the node module
+var tessel = require('tessel');
+var hardware = tessel.port('A');
+
+var gprs = require('../').use(hardware);
+
+//  Handle some unsolicited messages
+var handlePlus = function(data) {
+  console.log('\nGot an unsolicited message!\n\t', data);
+};
+var powerDaemon = function() {
+  gprs.emit('powered off');
+  console.log('The GPRS Module is off now.');
+};
+gprs.notifyOn({'+' : handlePlus, 'NORMAL POWER DOWN' : powerDaemon});
+
+gprs.on('ready', function() {
+  //  Give it 30 more seconds to connect to the network, then try to send an SMS
+  setTimeout(function() {
+    var smsCallback = function(err, data) {
+      console.log('Did we send the text?\t', data[0] != -1);
+      if (data[0] != -1) {
+        console.log('Reply from the SIM900 (text number):\t', data);
+      }
+    };
+    //  Replce the #s with the String representation of 10+ digit number
+    //  (hint: the U.S.'s country code is 1)
+    console.log('Trying to send an SMS now');
+    gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
+  }, 300);
+
+  //  command the GPRS module via the command line with tessel-node
+  process.on('message', function (data) {
+    console.log('got command', [data]);
+    gprs.txrx(data, 10000, function(err, data) {
+      console.log('\nreply:\nerr:\t', err, '\ndata:');
+      data.forEach(function(d) {
+        console.log('\t' + d);
+      });
+      console.log('');
+    });
+  });
+});
+
+// Do some blinky to show we're alive
+var led1 = tessel.led(1).output().high();
+var led2 = tessel.led(2).output().low();
+setInterval(function () {
+  led1.toggle();
+  led2.toggle();
+}, 150);
 ```
+## Methods
+
+##### * 
+
+## Events
 
 ## License
 
 MIT
+APACHE
