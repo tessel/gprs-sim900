@@ -407,7 +407,7 @@ GPRS.prototype.togglePower = function(callback) {
     setTimeout(function() {
       self.power.high();
       setTimeout(function() {
-        self.emit('powertoggled');
+        self.emit('powerToggled');
         if (callback) {
           callback();
         }

@@ -135,6 +135,12 @@ setInterval(function () {
 
 ## Events
 
+#### * `gprs.on('intermediate', callback(correct))`
+
+#### * `gprs.on('powerToggled', callback())`
+
+#### * `gprs.on('ready', callback())`
+
 ## License
 
 MIT
