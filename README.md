@@ -135,11 +135,11 @@ setInterval(function () {
 
 ## Events
 
-#### * `gprs.on('intermediate', callback(correct))`
+##### * `gprs.on('intermediate', callback(correct))` Description...
 
-#### * `gprs.on('powerToggled', callback())`
+##### * `gprs.on('powerToggled', callback())`
 
-#### * `gprs.on('ready', callback())`
+##### * `gprs.on('ready', callback())`
 
 ## License
 
