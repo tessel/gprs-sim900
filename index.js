@@ -95,10 +95,10 @@ GPRS.prototype._establishContact = function(callback, rep, reps) {
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
 };
 
-// Make UART calls to the module
+// Make UART calls to the SIM900. Use this function to expand the GPRS module's functionality by sending AT commands and recieving the SIM900's replies. If you implement something particularly useful, submit a pull request!
 GPRS.prototype._txrx = function(message, patience, callback, alternate) {
   /*
-  Every time we interact with the SIM900, it's through a series of UART calls and responses. This fucntion makes that less painful. Note that this function requires that the SIM900 be configured to echo the commands it recieves (the default) in order for it to function properly.
+  Every time we interact with the SIM900, it's through a series of UART calls and responses. This function makes that less painful. Note that this function requires that the SIM900 be configured to echo the commands it recieves (the default) in order for it to function properly.
 
   Args
     message
@@ -158,7 +158,7 @@ GPRS.prototype.answerCall = function(callback) {
   });
 };
 
-// Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length.
+// Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length. Like `_txrx`, this function is also useful for expanding the module's functionality.
 GPRS.prototype._chain = function(messages, patiences, replies, callback) {
   /*
   mesages
