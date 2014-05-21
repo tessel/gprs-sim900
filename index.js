@@ -22,13 +22,11 @@ var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
 
 // Constructor
-function GPRS (hardware, secondaryHardware, baud) {
+function GPRS (hardware, baud) {
   /*
   Args
     hardware
       The Tessel port to be used for priary communication
-    secondaryHardware
-      The additional port that can be used for debug purposes. not required. Typically, D/A will be primary, C/B will be secondary
     baud
       Override the defualt baud rate of 115200 if necessary (for software UART)
   */
@@ -47,15 +45,6 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.powered = null;
   //  The defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
-
-  //  Second debug port is optional and largely unnecessary
-  if (secondaryHardware) {
-    self.debugHardware = secondaryHardware;
-    self.debugUART = secondaryHardware.UART({baudrate: 115200});
-    self.ringIndicator = secondaryHardware.gpio(3);
-    self.debugPacketizer = new Packetizer(self.debugUART);
-    self.debugPacketizer.packetize();
-  }
 }
 
 util.inherits(GPRS, EventEmitter);
@@ -432,13 +421,11 @@ GPRS.prototype.togglePower = function(callback) {
 };
 
 // Connect the GPRS module and establish contact with the SIM900
-function use(hardware, debug, baud, callback) {
+function use(hardware, baud, callback) {
   /*
   Args
     hardware
       The Tessel port to use for the main GPRS hardware
-    debug
-      The debug port, if any, to use (null most of the time).
     baud
       Alternate baud rate for the UART
     callback
@@ -449,7 +436,7 @@ function use(hardware, debug, baud, callback) {
         Error, if any, while connecting. Passes null if successful.
   */
 
-  var radio = new GPRS(hardware, debug, baud);
+  var radio = new GPRS(hardware, baud);
   radio._establishContact(callback);
   return radio;
 }
