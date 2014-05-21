@@ -35,7 +35,7 @@ function GPRS (hardware, baud) {
 
   var self = this;
 
-  baud = baud || 9600;
+  baud = baud || 115200;
 
   self.hardware = hardware;
   self.uart = new hardware.UART({baudrate: baud});
