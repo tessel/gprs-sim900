@@ -20,8 +20,8 @@ gprs.on('ready', function() {
   //  Give it 30 more seconds to connect to the network, then try to send an SMS
   setTimeout(function() {
     var smsCallback = function(err, data) {
-      console.log('Did we send the text?\t', data[0] != -1);
-      if (data[0] != -1) {
+      console.log('Did we send the text?\t', data[0] !== -1);
+      if (data[0] !== -1) {
         console.log('Reply from the SIM900 (text number):\t', data);
       }
     };
@@ -34,7 +34,7 @@ gprs.on('ready', function() {
   //  command the GPRS module via the command line with tessel-node
   process.on('message', function (data) {
     console.log('got command', [data]);
-    gprs.txrx(data, 10000, function(err, data) {
+    gprs._txrx(data, 10000, function(err, data) {
       console.log('\nreply:\nerr:\t', err, '\ndata:');
       data.forEach(function(d) {
         console.log('\t' + d);
