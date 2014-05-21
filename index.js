@@ -266,7 +266,7 @@ GPRS.prototype.hangUp = function(callback) {
 };
 
 // Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
-GPRS.prototype.notify = function() {
+GPRS.prototype._notify = function() {
   /*
   Args
     none - see notifyOn
@@ -308,7 +308,7 @@ GPRS.prototype.notifyOn = function(pairs, everyTime) {
   var self = this;
   if (Object.keys(self.notificationCallbacks).length < 2) {
     //  This is the first time this was called, you should start notifying
-    self.notify();
+    self._notify();
   }
   Object.keys(pairs).forEach(function(newKey) {
     //  Note that this overwrites whatever may have been there
