@@ -8,8 +8,12 @@
 // except according to those terms.
 
 /*
-At the center of Tessel's GPRS Module lies the SIM900, documentation for which, including a full list of commands, can be found at: http://wm.sim.com/producten.aspx?id=1019
-The full AT command manual is here: http://wm.sim.com/downloaden.aspx?id=2986
+At the center of Tessel's GPRS Module lies the SIM900, documentation 
+for which, including a full list of commands, can be found at:
+http://wm.sim.com/producten.aspx?id=1019
+
+The full AT command manual is here: 
+http://wm.sim.com/downloaden.aspx?id=2986
 */
 
 var util = require('util');
@@ -41,10 +45,10 @@ function GPRS (hardware, secondaryHardware, baud) {
   self.inACall = false;
   self.notificationCallbacks = {'_everyTime' : []};
   self.powered = null;
-  //  the defaults are fine for most of Postmaster's args
+  //  The defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
 
-  //  second debug port is optional and largely unnecessary
+  //  Second debug port is optional and largely unnecessary
   if (secondaryHardware) {
     self.debugHardware = secondaryHardware;
     self.debugUART = secondaryHardware.UART({baudrate: 115200});
@@ -88,8 +92,8 @@ GPRS.prototype._establishContact = function(callback, rep, reps) {
   } else {
     self._txrx('AT', patience, function checkIfWeContacted(err, data) {
       if (err && err.type === 'timeout') {
-        //  if we time out on AT, we're likely powered off
-        //  toggle the power and try again
+        //  If we time out on AT, we're likely powered off
+        //  Toggle the power and try again
         self.togglePower(function tryAgainAfterToggle() {
           self._establishContact(callback, rep + 1, reps);
         });
@@ -108,7 +112,7 @@ GPRS.prototype._establishContact = function(callback, rep, reps) {
 // Make UART calls to the module
 GPRS.prototype._txrx = function(message, patience, callback, alternate) {
   /*
-  Every time we interact with the sim900, it's through a series of uart calls and responses. this fucntion makes that less painful.
+  Every time we interact with the SIM900, it's through a series of UART calls and responses. This fucntion makes that less painful. Note that this function requires that the SIM900 be configured to echo the commands it recieves (the default) in order for it to function properly.
 
   Args
     message
@@ -118,14 +122,13 @@ GPRS.prototype._txrx = function(message, patience, callback, alternate) {
     callback
       Callback function
     alternate
-      An array of arrays of alternate starts and ends of reply post. of the form [[s1, s2 ...], [e1, e2, ...]]. Used in place of traditional controls.
-      If the third element of alternate is truth-y, then the given start values only need exist within the incoming data (good for posts with known headers but unknown bodies).
+      An array of arrays of alternate starts and ends of reply post. Of the form [[s1, s2 ...], [e1, e2, ...]]. Used in place of traditional controls. If the third element of `alternate` is truth-y, then the values of `start` only need exist within the incoming data (good for posts with known headers but unknown bodies), as opposed to at the beginning of the packet.
 
  Callback parameters
     err
       Error object, if applicable
     recieved
-      Ehe reply recieved within the interval
+      The reply recieved within the interval
   */
 
   var self = this;
@@ -140,7 +143,7 @@ GPRS.prototype._txrx = function(message, patience, callback, alternate) {
     }
   });
   alternate = alternate || null;
-  //  it's a virtue, but mostly the module won't work if you're impatient
+  //  It's a virtue, but mostly the module won't work if you're impatient
   patience = Math.max(patience, 100);
 
   self.postmaster.send(message, patience, callback, alternate);
@@ -169,13 +172,13 @@ GPRS.prototype.answerCall = function(callback) {
   });
 };
 
-// Send a series of back-to-back messages recursively, do something with the final result. other results, if not of the form [<message>, <OK>] error out and pass false to the callback. args messages and patience must be of the same length.
+// Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length.
 GPRS.prototype.chain = function(messages, patiences, replies, callback) {
   /*
   mesages
     An array of Strings to send as commands
   patiences
-    An array of numbers; how long to wait for each command to return
+    An array of numbers; milliseconds to wait for each command to return
   replies
     An array of expected replies (arrays of strings). If any index is false-y, its reply simply must not error out.
   callback
@@ -190,22 +193,25 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
 
   var self = this;
   if (messages.length != patiences.length || messages.length != replies.length) {
-    callback(new Error('array lengths must match'), false);
+    callback(new Error('Array lengths must match'), false);
   } else {
+    //  A function to handle all commands before the final command
     var intermediate = function(err, data) {
       var correct = !err;
+      //  If the `replies` index is truth-y, check that the actual reply exactly matches the expected reply
       if (replies[0]) {
         for (var i = 0; i < data.length; i++) {
-          //  allow start of transmission packets to be valid
+          //  Allow start of transmission packets to be valid
           correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
         }
       }
       self.emit('intermediate', correct);
     };
-    //  not yet to the callback
+    //  Still more to do in the chain
     if (messages.length > 0) {
       var func = (messages.length === 1) ? callback:intermediate;
       self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
+      //  If we have more to do before the base case, respond to the 'intermediate' event and keep going
       if (func === intermediate) {
         self.once('intermediate', function(correct) {
           if (correct) {
@@ -213,7 +219,7 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
           } else {
             self.postmaster.forceClear();
             if (callback) {
-              callback(new Error('chain broke on ' + messages[0]), false);
+              callback(new Error('Chain broke on ' + messages[0]), false);
             }
           }
         });
@@ -227,7 +233,7 @@ GPRS.prototype.dial = function(number, callback) {
   /*
   Args
     number
-      String representation of the number. Must be at least 10 digits
+      String representation of the number. Must be at least 10 digits.
     callback
       Callback function
 
@@ -244,7 +250,7 @@ GPRS.prototype.dial = function(number, callback) {
     callback(new Error('Number must be at least 10 digits'), []);
   } else {
     this.inACall = true;
-                                //  hang up in a year
+                                  // hang up in a year
     this._txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
       this.inACall = false;
       callback(err, data);
@@ -273,7 +279,7 @@ GPRS.prototype.hangUp = function(callback) {
   });
 };
 
-// Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions
+// Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 GPRS.prototype.notify = function() {
   /*
   Args
@@ -285,20 +291,20 @@ GPRS.prototype.notify = function() {
 
   var self = this;
   self.postmaster.on('unsolicited', function(data) {
-    //  on selected unsolicited events
+    //  On selected unsolicited events
     Object.keys(self.notificationCallbacks).forEach(function(key) {
       if (data && data.indexOf(key) === 0) { //callThisFunction) {
         self.notificationCallbacks[key](data);
       }
     });
-    //  on every unsolicited event
+    //  On every unsolicited event
     self.notificationCallbacks._everyTime.forEach(function(func) {
       func(data);
     });
   });
 };
 
-// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending.
+// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 GPRS.prototype.notifyOn = function(pairs, everyTime) {
   /*
   Args
@@ -315,27 +321,27 @@ GPRS.prototype.notifyOn = function(pairs, everyTime) {
 
   var self = this;
   if (Object.keys(self.notificationCallbacks).length < 2) {
-    //  this is the first time this was called, you should start notifying
+    //  This is the first time this was called, you should start notifying
     self.notify();
   }
   Object.keys(pairs).forEach(function(newKey) {
-    //  note that this overwrites whatever may have been there
+    //  Note that this overwrites whatever may have been there
     self.notificationCallbacks[newKey] = pairs[newKey];
   });
   if (everyTime) {
     everyTime.forEach(function(newKey) {
-      //  note that this overwrites whatever may have been there
+      //  Note that this overwrites whatever may have been there
       self.notificationCallbacks._everyTime.push(newKey);
     });
   }
 };
 
-// Read the specified SMS
+// Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card. 
 GPRS.prototype.readSMS = function(index, mode, callback) {
   /*
   Args - two possibilities
     index
-      The index of the message to read. If not specified, the newest message is read. Note that the SIM900 is 1-indexed, not 0-indexed.
+      The index of the message to read. Note that the SIM900 is 1-indexed, not 0-indexed.
     mode
       0 - Mark the message as read
       1 - Do not chage the status of the message
@@ -372,10 +378,10 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     err
       Error
     success
-      Did it send properly? If yes, get back the ID number of the text in an array, if not, the error and -1 as the ID.
+      Did it send properly? If yes, get back the ID number of the text in an array; if not, the error and -1 as the ID.
   */
 
-  if (!number) {
+  if (!number || number.length() < 10) {
     callback(new Error('Did not specify a 10+ digit number'), null);
   } else {
     var self = this;
