@@ -173,7 +173,7 @@ GPRS.prototype.answerCall = function(callback) {
 };
 
 // Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length.
-GPRS.prototype.chain = function(messages, patiences, replies, callback) {
+GPRS.prototype._chain = function(messages, patiences, replies, callback) {
   /*
   mesages
     An array of Strings to send as commands
@@ -215,7 +215,7 @@ GPRS.prototype.chain = function(messages, patiences, replies, callback) {
       if (func === intermediate) {
         self.once('intermediate', function(correct) {
           if (correct) {
-            self.chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
+            self._chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
           } else {
             self.postmaster.forceClear();
             if (callback) {
@@ -390,7 +390,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     var patiences = [2000, 5000, 5000];
     var replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
-    self.chain(commands, patiences, replies, function(errr, data) {
+    self._chain(commands, patiences, replies, function(errr, data) {
       //  manually check the last one
       var correct = !errr && data[0] == message && data[1] == '> ';
       var id = -1;
