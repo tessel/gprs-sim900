@@ -13,7 +13,7 @@ for which, including a full list of commands, can be found at:
 http://wm.sim.com/producten.aspx?id=1019
 
 The full AT command manual is here: 
-http://wm.sim.com/downloaden.aspx?id=2986
+http://wm.sim.com/upfile/2013424141114f.pdf
 */
 
 var util = require('util');
