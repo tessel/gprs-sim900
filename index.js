@@ -21,6 +21,8 @@ var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
 
+var DEBUG = false;  //  Debug messages to the console
+
 // Constructor
 function GPRS (hardware, baud) {
   /*
@@ -126,9 +128,9 @@ GPRS.prototype._txrx = function(message, patience, callback, alternate) {
   patience = patience || 250;
   callback = callback || ( function(err, arg) {
     if (err) {
-      console.log('err:\n', err);
+      debug('err:\n', err);
     } else {
-      console.log('reply:\n', arg);
+      debug('reply:\n', arg);
     }
   });
   alternate = alternate || null;
@@ -439,6 +441,12 @@ function use(hardware, baud, callback) {
   var radio = new GPRS(hardware, baud);
   radio._establishContact(callback);
   return radio;
+}
+
+function debug (thing) {
+  if (DEBUG) {
+    console.log(thing);
+  }
 }
 
 module.exports.GPRS = GPRS;
