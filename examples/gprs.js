@@ -29,7 +29,7 @@ gprs.on('ready', function() {
     //  (hint: the U.S.'s country code is 1)
     console.log('Trying to send an SMS now');
     gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
-  }, 300);
+  }, 30000);
 });
 
 //  Command the GPRS module via the command line with tessel-node
