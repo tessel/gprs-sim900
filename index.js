@@ -77,27 +77,22 @@ GPRS.prototype._establishContact = function(callback, rep, reps) {
     console.log(!err ? 'GPRS Module ready to command!' : 'Unable to contact GPRS Module.');
   };
 
-  if (rep > reps) {
-    var mess = 'Failed to connect to module because it could not be powered on and contacted after ' + reps + ' attempt(s)';
-    callback(new Error(mess), false);
-  } else {
-    self._txrx('AT', patience, function checkIfWeContacted(err, data) {
-      if (err && err.type === 'timeout') {
-        //  If we time out on AT, we're likely powered off
-        //  Toggle the power and try again
-        self.togglePower(function tryAgainAfterToggle() {
-          self._establishContact(callback, rep + 1, reps);
-        });
-      } else if (!err) {
-        self.emit('ready');
-        if (callback) {
-          callback(err, data);
-        }
-      } else if (callback) {
-        callback(err, false);
+  self._txrx('AT', patience, function checkIfWeContacted(err, data) {
+    if (err && err.type === 'timeout') {
+      //  If we time out on AT, we're likely powered off
+      //  Toggle the power and try again
+      self.togglePower(function tryAgainAfterToggle() {
+        self._establishContact(callback, rep + 1, reps);
+      });
+    } else if (!err) {
+      self.emit('ready');
+      if (callback) {
+        callback(err, data);
       }
-    }, [['AT', '\\x00AT', '\x00AT'], ['OK'], 1]);
-  }
+    } else if (callback) {
+      callback(err, false);
+    }
+  }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
 };
 
 // Make UART calls to the module
@@ -372,7 +367,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
       Did it send properly? If yes, get back the ID number of the text in an array; if not, the error and -1 as the ID.
   */
 
-  if (!number || number.length() < 10) {
+  if (!number || number.length < 10) {
     callback(new Error('Did not specify a 10+ digit number'), null);
   } else {
     var self = this;
@@ -407,6 +402,7 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 // Turn the module on or off by switching the power button (G3) electronically
 GPRS.prototype.togglePower = function(callback) {
   var self = this;
+  debug('toggling power...');
   self.power.high();
   setTimeout(function() {
     self.power.low();
@@ -414,11 +410,12 @@ GPRS.prototype.togglePower = function(callback) {
       self.power.high();
       setTimeout(function() {
         self.emit('powerToggled');
+        debug('done toggling power');
         if (callback) {
           callback();
         }
       }, 5000);
-    }, 1000);
+    }, 1500);
   }, 100);
 };
 

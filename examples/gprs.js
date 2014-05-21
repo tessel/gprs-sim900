@@ -30,17 +30,17 @@ gprs.on('ready', function() {
     console.log('Trying to send an SMS now');
     gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
   }, 300);
+});
 
-  //  command the GPRS module via the command line with tessel-node
-  process.on('message', function (data) {
-    console.log('got command', [data]);
-    gprs._txrx(data, 10000, function(err, data) {
-      console.log('\nreply:\nerr:\t', err, '\ndata:');
-      data.forEach(function(d) {
-        console.log('\t' + d);
-      });
-      console.log('');
+//  Command the GPRS module via the command line with tessel-node
+process.on('message', function (data) {
+  console.log('got command', [data.slice(1, data.length - 1)]);
+  gprs._txrx(data.slice(1, data.length - 1), 10000, function(err, data) {
+    console.log('\nreply:\nerr:\t', err, '\ndata:');
+    data.forEach(function(d) {
+      console.log('\t' + d);
     });
+    console.log('');
   });
 });
 
