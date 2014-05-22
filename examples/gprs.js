@@ -6,16 +6,6 @@ var hardware = tessel.port('A');
 
 var gprs = require('../').use(hardware);
 
-//  Handle some unsolicited messages
-var handlePlus = function(data) {
-  console.log('\nGot an unsolicited message!\n\t', data);
-};
-var powerDaemon = function() {
-  gprs.emit('powered off');
-  console.log('The GPRS Module is off now.');
-};
-gprs.notifyOn({'+' : handlePlus, 'NORMAL POWER DOWN' : powerDaemon});
-
 gprs.on('ready', function() {
   //  Give it 30 more seconds to connect to the network, then try to send an SMS
   setTimeout(function() {
@@ -30,6 +20,18 @@ gprs.on('ready', function() {
     console.log('Trying to send an SMS now');
     gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
   }, 30000);
+});
+
+//  Emit unsolicited messages beginning with...
+gprs.emitMe(['+', 'NORMAL POWER DOWN']);
+
+gprs.on('+', function handlePlus (data) {
+  console.log('\nGot an unsolicited message!\n\t', data);
+});
+
+gprs.on('NORMAL POWER DOWN', function powerDaemon () {
+  gprs.emit('powered off');
+  console.log('The GPRS Module is off now.');
 });
 
 //  Command the GPRS module via the command line with tessel-node

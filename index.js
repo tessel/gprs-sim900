@@ -43,7 +43,7 @@ function GPRS (hardware, baud) {
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
   self.inACall = false;
-  self.notificationCallbacks = {'_everyTime' : []};
+  self.emissions = [];
   self.powered = null;
   //  The defaults are fine for most of Postmaster's args
   self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
@@ -265,60 +265,47 @@ GPRS.prototype.hangUp = function(callback) {
   });
 };
 
-// Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
-GPRS.prototype._notify = function() {
+// Run through the `emissions` every time an unsolicited message comes in and emit events accordingly. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
+GPRS.prototype._checkEmissions = function() {
   /*
   Args
-    none - see notifyOn
+    none - see emitMe
 
   Callback parameters
-    None, but err and data are passed to the callbacks in notificationCallbacks
+    None, but packets are emitted
   */
 
   var self = this;
   self.postmaster.on('unsolicited', function(data) {
-    //  On selected unsolicited events
-    Object.keys(self.notificationCallbacks).forEach(function(key) {
-      if (data && data.indexOf(key) === 0) { //callThisFunction) {
-        self.notificationCallbacks[key](data);
+    //  Emit unsolicited packets that begin with specific characters as events
+    self.emissions.forEach(function (beginning) {
+      if (data.indexOf(beginning) === 0) {
+        self.emit(beginning, data);
       }
-    });
-    //  On every unsolicited event
-    self.notificationCallbacks._everyTime.forEach(function(func) {
-      func(data);
     });
   });
 };
 
 // Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
-GPRS.prototype.notifyOn = function(pairs, everyTime) {
+GPRS.prototype.emitMe = function(beginnings) {
   /*
   Args
-    pairs
-      An Object which maps unsolicited message header Strings (e.g. '+CMT' = text message recieved) to callback functions.
-    everyTime
-      An Array of functions to call for every unsolicited message
+    beginnings
+      An array of Strings. If an unsolicited packet stats with one fo them, emit it as an event by he same name
 
   Callback parameters
-    None, but the given functions in pairs should accept:
+    None, but the events emitted will contain:
       data
         The text from the unsolicited packet
   */
 
   var self = this;
-  if (Object.keys(self.notificationCallbacks).length < 2) {
-    //  This is the first time this was called, you should start notifying
-    self._notify();
-  }
-  Object.keys(pairs).forEach(function(newKey) {
-    //  Note that this overwrites whatever may have been there
-    self.notificationCallbacks[newKey] = pairs[newKey];
+  beginnings.forEach(function (beginning) {
+    self.emissions.push(beginning);
   });
-  if (everyTime) {
-    everyTime.forEach(function(newKey) {
-      //  Note that this overwrites whatever may have been there
-      self.notificationCallbacks._everyTime.push(newKey);
-    });
+  if (this.emissions.length === beginnings.length) {
+    //  This is the first time this was called, you should start notifying
+    this._checkEmissions();
   }
 };
 
