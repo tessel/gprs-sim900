@@ -182,7 +182,7 @@ GPRS.prototype._chain = function(messages, patiences, replies, callback) {
     callback(new Error('Array lengths must match'), false);
   } else {
     //  A function to handle all commands before the final command
-    var intermediate = function(err, data) {
+    var _intermediate = function(err, data) {
       var correct = !err;
       //  If the `replies` index is truth-y, check that the actual reply exactly matches the expected reply
       if (replies[0]) {
@@ -191,15 +191,15 @@ GPRS.prototype._chain = function(messages, patiences, replies, callback) {
           correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
         }
       }
-      self.emit('intermediate', correct);
+      self.emit('_intermediate', correct);
     };
     //  Still more to do in the chain
     if (messages.length > 0) {
-      var func = (messages.length === 1) ? callback:intermediate;
+      var func = (messages.length === 1) ? callback:_intermediate;
       self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
-      //  If we have more to do before the base case, respond to the 'intermediate' event and keep going
-      if (func === intermediate) {
-        self.once('intermediate', function(correct) {
+      //  If we have more to do before the base case, respond to the '_intermediate' event and keep going
+      if (func === _intermediate) {
+        self.once('_intermediate', function(correct) {
           if (correct) {
             self._chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
           } else {
@@ -286,7 +286,7 @@ GPRS.prototype._checkEmissions = function() {
   });
 };
 
-// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
+// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. This function configures the module to emit events that beign with a specific String. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 GPRS.prototype.emitMe = function(beginnings) {
   /*
   Args
