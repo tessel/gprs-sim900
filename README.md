@@ -67,22 +67,12 @@ var hardware = tessel.port('A');
 
 var gprs = require('../').use(hardware);
 
-//  Handle some unsolicited messages
-var handlePlus = function(data) {
-  console.log('\nGot an unsolicited message!\n\t', data);
-};
-var powerDaemon = function() {
-  gprs.emit('powered off');
-  console.log('The GPRS Module is off now.');
-};
-gprs.notifyOn({'+' : handlePlus, 'NORMAL POWER DOWN' : powerDaemon});
-
 gprs.on('ready', function() {
   //  Give it 30 more seconds to connect to the network, then try to send an SMS
   setTimeout(function() {
     var smsCallback = function(err, data) {
-      console.log('Did we send the text?\t', data[0] != -1);
-      if (data[0] != -1) {
+      console.log('Did we send the text?\t', data[0] !== -1);
+      if (data[0] !== -1) {
         console.log('Reply from the SIM900 (text number):\t', data);
       }
     };
@@ -90,18 +80,30 @@ gprs.on('ready', function() {
     //  (hint: the U.S.'s country code is 1)
     console.log('Trying to send an SMS now');
     gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
-  }, 300);
+  }, 30000);
+});
 
-  //  command the GPRS module via the command line with tessel-node
-  process.on('message', function (data) {
-    console.log('got command', [data]);
-    gprs.txrx(data, 10000, function(err, data) {
-      console.log('\nreply:\nerr:\t', err, '\ndata:');
-      data.forEach(function(d) {
-        console.log('\t' + d);
-      });
-      console.log('');
+//  Emit unsolicited messages beginning with...
+gprs.emitMe(['+', 'NORMAL POWER DOWN']);
+
+gprs.on('+', function handlePlus (data) {
+  console.log('\nGot an unsolicited message!\n\t', data);
+});
+
+gprs.on('NORMAL POWER DOWN', function powerDaemon () {
+  gprs.emit('powered off');
+  console.log('The GPRS Module is off now.');
+});
+
+//  Command the GPRS module via the command line with `tessel run gprs.js -m`
+process.on('message', function (data) {
+  console.log('got command', [data.slice(1, data.length - 1)]);
+  gprs._txrx(data.slice(1, data.length - 1), 10000, function(err, data) {
+    console.log('\nreply:\nerr:\t', err, '\ndata:');
+    data.forEach(function(d) {
+      console.log('\t' + d);
     });
+    console.log('');
   });
 });
 
@@ -112,22 +114,23 @@ setInterval(function () {
   led1.toggle();
   led2.toggle();
 }, 150);
+
 ```
 ## Methods
 
 ##### * `gprs.answerCall(callback(err, data))` Answer an incoming voice call.
 
-##### * `gprs.chain(messages, patiences, replies, callback(err, data))` Send a series of back-to-back messages recursively, do something with the final result. other results, if not of the form [<message>, <OK>] error out and pass false to the callback. args messages and patience must be of the same length.
+##### * `gprs._chain(messages, patiences, replies, callback(err, data))` Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length. Like `_txrx`, this function is also useful for expanding the module's functionality.
 
 ##### * `gprs.dial(number, callback(err, data))` Call the specified number (voice call, not data call).
 
 ##### * `gprs.hangUp(callback(err, data))` Terminate a voice call.
 
-##### * `gprs.notify()` Run through the notificationCallbacks every time an unsolicited message comes in and call the related functions.
+##### * `gprs._checkEmissions()` Run through the `emissions` every time an unsolicited message comes in and emit events accordingly. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 
-##### * `gprs.notifyOn(pairs, everyTime)` Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending.
+##### * `gprs.emitMe(beginnings)` Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. This function configures the module to emit events that beign with a specific String. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 
-##### * `gprs.readSMS(index, mode, callback(err, message))` Read the specified SMS.
+##### * `gprs.readSMS(index, mode, callback(err, message))` Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card. 
 
 ##### * `gprs.sendSMS(number, message, callback(err, data))` Send an SMS to the specified number.
 
@@ -135,11 +138,11 @@ setInterval(function () {
 
 ## Events
 
-##### * `gprs.on('intermediate', callback(correct))` Description...
+##### * `gprs.on('powerToggled', callback())` The SIM900 has been turned on or off
 
-##### * `gprs.on('powerToggled', callback())`
+##### * `gprs.on('ready', callback())` The SIM900 is ready to recieve commands. Note that it may not yet be connected to the cell network. 
 
-##### * `gprs.on('ready', callback())`
+##### * `gprs.on('_intermediate', callback(correct))` Used internally for `_chain`
 
 ## License
 
