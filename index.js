@@ -52,7 +52,7 @@ function GPRS (hardware, baud) {
 util.inherits(GPRS, EventEmitter);
 
 // Make contact with the GPRS module, emit the 'ready' event
-GPRS.prototype._establishContact = function(callback, rep, reps) {
+GPRS.prototype._establishContact = function (callback, rep, reps) {
   /*
   Args
     callback
@@ -96,7 +96,7 @@ GPRS.prototype._establishContact = function(callback, rep, reps) {
 };
 
 // Make UART calls to the SIM900. Use this function to expand the GPRS module's functionality by sending AT commands and recieving the SIM900's replies. If you implement something particularly useful, submit a pull request!
-GPRS.prototype._txrx = function(message, patience, callback, alternate) {
+GPRS.prototype._txrx = function (message, patience, callback, alternate) {
   /*
   Every time we interact with the SIM900, it's through a series of UART calls and responses. This function makes that less painful. Note that this function requires that the SIM900 be configured to echo the commands it recieves (the default) in order for it to function properly.
 
@@ -121,7 +121,7 @@ GPRS.prototype._txrx = function(message, patience, callback, alternate) {
 
   message  = message  || 'AT';
   patience = patience || 250;
-  callback = callback || ( function(err, arg) {
+  callback = callback || ( function (err, arg) {
     if (err) {
       debug('err:\n', err);
     } else {
@@ -136,7 +136,7 @@ GPRS.prototype._txrx = function(message, patience, callback, alternate) {
 };
 
 // Answer an incoming voice call
-GPRS.prototype.answerCall = function(callback) {
+GPRS.prototype.answerCall = function (callback) {
   /*
   Args
     callback
@@ -150,7 +150,7 @@ GPRS.prototype.answerCall = function(callback) {
   */
 
   var self = this;
-  self._txrx('ATA', 10000, function(err, data) {
+  self._txrx('ATA', 10000, function (err, data) {
     if (!err) {
       self.inACall = true;
     }
@@ -159,7 +159,7 @@ GPRS.prototype.answerCall = function(callback) {
 };
 
 // Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length. Like `_txrx`, this function is also useful for expanding the module's functionality.
-GPRS.prototype._chain = function(messages, patiences, replies, callback) {
+GPRS.prototype._chain = function (messages, patiences, replies, callback) {
   /*
   mesages
     An array of Strings to send as commands
@@ -182,7 +182,7 @@ GPRS.prototype._chain = function(messages, patiences, replies, callback) {
     callback(new Error('Array lengths must match'), false);
   } else {
     //  A function to handle all commands before the final command
-    var _intermediate = function(err, data) {
+    var _intermediate = function (err, data) {
       var correct = !err;
       //  If the `replies` index is truth-y, check that the actual reply exactly matches the expected reply
       if (replies[0]) {
@@ -199,7 +199,7 @@ GPRS.prototype._chain = function(messages, patiences, replies, callback) {
       self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
       //  If we have more to do before the base case, respond to the '_intermediate' event and keep going
       if (func === _intermediate) {
-        self.once('_intermediate', function(correct) {
+        self.once('_intermediate', function (correct) {
           if (correct) {
             self._chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
           } else {
@@ -215,7 +215,7 @@ GPRS.prototype._chain = function(messages, patiences, replies, callback) {
 };
 
 // Call the specified number (voice call, not data call)
-GPRS.prototype.dial = function(number, callback) {
+GPRS.prototype.dial = function (number, callback) {
   /*
   Args
     number
@@ -237,7 +237,7 @@ GPRS.prototype.dial = function(number, callback) {
   } else {
     this.inACall = true;
                                   // hang up in a year
-    this._txrx('ATD' + number + ';', 1000*60*60*24*365, function(err, data) {
+    this._txrx('ATD' + number + ';', 1000*60*60*24*365, function (err, data) {
       this.inACall = false;
       callback(err, data);
     });
@@ -245,7 +245,7 @@ GPRS.prototype.dial = function(number, callback) {
 };
 
 // Terminate a voice call
-GPRS.prototype.hangUp = function(callback) {
+GPRS.prototype.hangUp = function (callback) {
   /*
   Args
     callback
@@ -259,14 +259,14 @@ GPRS.prototype.hangUp = function(callback) {
   */
 
   var self = this;
-  this._txrx('ATH', 100000, function(err, data) {
+  self._txrx('ATH', 100000, function (err, data) {
     self.inACall = false;
     callback(err, data);
   });
 };
 
 // Run through the `emissions` every time an unsolicited message comes in and emit events accordingly. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
-GPRS.prototype._checkEmissions = function() {
+GPRS.prototype._checkEmissions = function () {
   /*
   Args
     none - see emitMe
@@ -276,7 +276,7 @@ GPRS.prototype._checkEmissions = function() {
   */
 
   var self = this;
-  self.postmaster.on('unsolicited', function(data) {
+  self.postmaster.on('unsolicited', function (data) {
     //  Emit unsolicited packets that begin with specific characters as events
     self.emissions.forEach(function (beginning) {
       if (data.indexOf(beginning) === 0) {
@@ -287,7 +287,7 @@ GPRS.prototype._checkEmissions = function() {
 };
 
 // Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. This function configures the module to emit events that beign with a specific String. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
-GPRS.prototype.emitMe = function(beginnings) {
+GPRS.prototype.emitMe = function (beginnings) {
   /*
   Args
     beginnings
@@ -310,7 +310,7 @@ GPRS.prototype.emitMe = function(beginnings) {
 };
 
 // Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card. 
-GPRS.prototype.readSMS = function(index, mode, callback) {
+GPRS.prototype.readSMS = function (index, mode, callback) {
   /*
   Args - two possibilities
     index
@@ -337,7 +337,7 @@ GPRS.prototype.readSMS = function(index, mode, callback) {
 };
 
 // Send an SMS to the specified number
-GPRS.prototype.sendSMS = function(number, message, callback) {
+GPRS.prototype.sendSMS = function (number, message, callback) {
   /*
   Args
     number
@@ -363,13 +363,13 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
     var patiences = [2000, 5000, 5000];
     var replies = [['AT+CMGF=1', 'OK'], ['AT+CMGS="' + number + '"', '> '], [message, '> ']];
 
-    self._chain(commands, patiences, replies, function(errr, data) {
+    self._chain(commands, patiences, replies, function (errr, data) {
       //  manually check the last one
       var correct = !errr && data[0] == message && data[1] == '> ';
       var id = -1;
       var err = errr || new Error('Unable to send SMS');
       if (correct) {
-        self._txrx(new Buffer([0x1a]), 10000, function(err, data) {
+        self._txrx(new Buffer([0x1a]), 10000, function (err, data) {
           if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
             //  message sent!
             id = parseInt(data[0].slice(7), 10);
@@ -387,15 +387,15 @@ GPRS.prototype.sendSMS = function(number, message, callback) {
 };
 
 // Turn the module on or off by switching the power button (G3) electronically
-GPRS.prototype.togglePower = function(callback) {
+GPRS.prototype.togglePower = function (callback) {
   var self = this;
   debug('toggling power...');
   self.power.high();
-  setTimeout(function() {
+  setTimeout(function () {
     self.power.low();
-    setTimeout(function() {
+    setTimeout(function () {
       self.power.high();
-      setTimeout(function() {
+      setTimeout(function () {
         self.emit('powerToggled');
         debug('done toggling power');
         if (callback) {
