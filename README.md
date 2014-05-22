@@ -6,6 +6,19 @@ Driver for the gprs-sim900 Tessel GPRS/SIM module ([SIM900](ftp://imall.iteadstu
 npm install gprs-sim900
 ```
 ## Example
+
+*Note:* The GPRS module must be configured properly in hardware in order for it to work. At the very least, make sure your Tessel and GPRS module look like the ones in the image below (plus a SIM card in the holder on the module, not pictured below). For a full overview of the GPRS module hardware, see [this section](./README.md#hardware-overviewsetup).
+
+![GPRS module minimum configuration](https://s3.amazonaws.com/technicalmachine-assets/doc+pictures/gprs-hw-set.jpg)
+
+#### HW configuration checklist
+
+* GPRS power input select header (three-pin header in board corner) on '3.3V Tessel' (two pins closest to board corner).
+* Antenna plugged in
+* SIM card in holder (not pictured above)
+
+If the yellow `STATUS` light is on and the green `NETLIGHT` is blinking when the module is plugged in, then the module is configured correctly.
+
 ```js
 var tessel = require('tessel');
 var hardware = tessel.port('A');
@@ -134,7 +147,7 @@ If the pins are not connected in either of those ways, the GPRS module will not 
 
 ### External power input pins/connector (pink)
 
-This black pin header and gray connector are where external power is applied to the GPRS module.
+This black pin header and beige connector are where external power is applied to the GPRS module.
 
 * The connectors' VIN and GND pins are tied together, so power need only be applied to one of the connectors.
 * The input circuitry is rated to a  maximum of 17 V, a minimum of ~3.6 V.
