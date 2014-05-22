@@ -34,7 +34,7 @@ gprs.on('NORMAL POWER DOWN', function powerDaemon () {
   console.log('The GPRS Module is off now.');
 });
 
-//  Command the GPRS module via the command line with tessel-node
+//  Command the GPRS module via the command line with `tessel run gprs.js -m`
 process.on('message', function (data) {
   console.log('got command', [data.slice(1, data.length - 1)]);
   gprs._txrx(data.slice(1, data.length - 1), 10000, function(err, data) {
