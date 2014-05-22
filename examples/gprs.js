@@ -2,7 +2,7 @@
 // http://creativecommons.org/publicdomain/zero/1.0/
 
 var tessel = require('tessel');
-var hardware = tessel.port('A');
+var hardware = tessel.port['A'];
 
 var gprs = require('../').use(hardware);
 
