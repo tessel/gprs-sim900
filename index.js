@@ -73,9 +73,6 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
   rep = rep || 0;
   reps = reps || 5;
   var patience = 1000;
-  callback = callback || function dummyCallback(err) {
-    console.log(!err ? 'GPRS Module ready to command!' : 'Unable to contact GPRS Module.');
-  };
 
   self._txrx('AT', patience, function checkIfWeContacted(err, data) {
     if (err && err.type === 'timeout') {
@@ -85,11 +82,10 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
         self._establishContact(callback, rep + 1, reps);
       });
     } else if (!err) {
-      self.emit('ready');
-      if (callback) {
-        callback(err, data);
-      }
+      self.emit('ready', data);
+      callback && callback(err, data);
     } else if (callback) {
+      self.emit('error', data);
       callback(err, false);
     }
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
@@ -405,6 +401,10 @@ GPRS.prototype.togglePower = function (callback) {
     }, 1500);
   }, 100);
 };
+
+GPRS.prototype.disable = function () {
+  this.uart.disable();
+}
 
 // Connect the GPRS module and establish contact with the SIM900
 function use(hardware, baud, callback) {
