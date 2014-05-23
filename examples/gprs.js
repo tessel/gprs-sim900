@@ -4,7 +4,11 @@
 var tessel = require('tessel');
 var hardware = tessel.port['A'];
 
-var gprs = require('../').use(hardware);
+var GPRSModuleReady = function (err) {
+  console.log(!err ? 'GPRS Module ready to command!' : 'Unable to contact GPRS Module.');
+};
+                          //  port, baud (115200 by default), callback
+var gprs = require('../').use(hardware, 115200, GPRSModuleReady);
 
 gprs.on('ready', function() {
   //  Give it 30 more seconds to connect to the network, then try to send an SMS
