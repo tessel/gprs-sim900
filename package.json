@@ -1,7 +1,7 @@
 {
   "name": "gprs-sim900",
   "description": "Driver for the gprs-sim900 Tessel GPRS/SIM module ([SIM900](ftp://imall.iteadstudio.com/IM120417009_IComSat/DOC_SIM900_Hardware%20Design_V2.00.pdf)).",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "index.js",
   "directories": {
     "example": "examples"
