@@ -19,7 +19,7 @@ gprs.on('ready', function() {
         console.log('Reply from the SIM900 (text number):\t', data);
       }
     };
-    //  Replce the #s with the String representation of 10+ digit number
+    //  Replace the #s with the String representation of 10+ digit number
     //  (hint: the U.S.'s country code is 1)
     console.log('Trying to send an SMS now');
     gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
