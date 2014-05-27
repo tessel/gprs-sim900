@@ -39,7 +39,7 @@ function GPRS (hardware, baud) {
 
   self.hardware = hardware;
   self.uart = new hardware.UART({baudrate: baud});
-  self.power = hardware.digital[3].high();
+  self.power = hardware.digital[2].high();
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
   self.inACall = false;
