@@ -1,32 +1,42 @@
 // Any copyright is dedicated to the Public Domain.
 // http://creativecommons.org/publicdomain/zero/1.0/
 
+/*********************************************
+Use the GPRS module to send a text to a phone
+number of your choice.
+*********************************************/
+
 var tessel = require('tessel');
 var hardware = tessel.port['A'];
+var baud = 115200; // Typically keep this at 115200, but you can set it to 9600 if you're hitting buffer overflows
 
-var GPRSModuleReady = function (err) {
-  console.log(!err ? 'GPRS Module ready to command!' : 'Unable to contact GPRS Module.');
-};
-                          //  port, baud (115200 by default), callback
-var gprs = require('../').use(hardware, 115200, GPRSModuleReady);
+var phoneNumber = '##########'; // Replace the #s with the String representation of 10+ digit number, including country code (1 for USA)
+var message = 'Text from a Tessel!';
+
+//  Port, baud (115200 by default), callback
+var gprs = require('../').use(hardware, baud); // Replace '../' with 'gprs-sim900' in your own code
 
 gprs.on('ready', function() {
-  //  Give it 30 more seconds to connect to the network, then try to send an SMS
+  console.log('GPRS module connected to Tessel. Searching for network...')
+  //  Give it 10 more seconds to connect to the network, then try to send an SMS
   setTimeout(function() {
-    var smsCallback = function(err, data) {
-      console.log('Did we send the text?\t', data[0] !== -1);
-      if (data[0] !== -1) {
-        console.log('Reply from the SIM900 (text number):\t', data);
+    console.log('Sending', message, 'to', phoneNumber, '...');
+    // Send message
+    gprs.sendSMS(phoneNumber, message, function smsCallback(err, data) {
+      if (err) {
+        return console.log(err);
       }
-    };
-    //  Replace the #s with the String representation of 10+ digit number
-    //  (hint: the U.S.'s country code is 1)
-    console.log('Trying to send an SMS now');
-    gprs.sendSMS('##########', 'Text from a Tessel!', smsCallback);
-  }, 30000);
+      var success = data[0] !== -1;
+      console.log('Text sent:', success);
+      if (success) {
+        // If successful, log the number of the sent text
+        console.log('GPRS Module sent text #', data[0]);
+      }
+    });
+  }, 10000);
 });
 
-//  Emit unsolicited messages beginning with...
+//  Emit unsolicited messages beginning with... (this is useful in the case of incoming calls and texts)
 gprs.emitMe(['+', 'NORMAL POWER DOWN']);
 
 gprs.on('+', function handlePlus (data) {
@@ -49,11 +59,3 @@ process.on('message', function (data) {
     console.log('');
   });
 });
-
-// Do some blinky to show we're alive
-var led1 = tessel.led(1).output().high();
-var led2 = tessel.led(2).output().low();
-setInterval(function () {
-  led1.toggle();
-  led2.toggle();
-}, 150);
