@@ -13,7 +13,7 @@ npm install gprs-sim900
 
 #### HW configuration checklist
 
-* GPRS power input select header (three-pin header in board corner) on '3.3V Tessel' (two pins closest to board corner).
+* GPRS power input select header (three-pin header in board corner) moved to '3.3V Tessel' (the two pins closest to board corner).
 * Antenna plugged in
 * SIM card in holder (not pictured above)
 
@@ -84,11 +84,11 @@ setInterval(function () {
 
 ##### * `gprs.hangUp(callback(err, data))` Terminate a voice call.
 
-##### * `gprs._checkEmissions()` Run through the `emissions` every time an unsolicited message comes in and emit events accordingly. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
+##### * `gprs._checkEmissions()` Run through the `emissions` every time an unsolicited message comes in and emit events accordingly. This function is key to the emitMe method. There is probably a better way to do this, so consider the function unstable and pull requests welcome.
 
-##### * `gprs.emitMe(beginnings)` Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. This function configures the module to emit events that beign with a specific String. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
+##### * `gprs.emitMe(beginnings)` Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. Beginnings is an array of strings, the function will emit unsolicited messages that begin with these strings. There is probably a better way to do this, so consider the function unstable and pull requests welcome.
 
-##### * `gprs.readSMS(index, mode, callback(err, message))` Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card. 
+##### * `gprs.readSMS(index, mode, callback(err, message))` Read the index specified SMS. Mode can be zero and make the message as read, or one and not change the status of the message. The callback's `message` is an array where index 0: command echo, 1: message information (read state, source number, data), 2: message text.
 
 ##### * `gprs.sendSMS(number, message, callback(err, data))` Send an SMS to the specified number.
 
@@ -101,6 +101,10 @@ setInterval(function () {
 ##### * `gprs.on('ready', callback())` The SIM900 is ready to recieve commands. Note that it may not yet be connected to the cell network. 
 
 ##### * `gprs.on('_intermediate', callback(correct))` Used internally for `_chain`
+
+## GPRS sim-900 AT Commands
+
+The GPRS module follows the sim-900 AT command structure. The full documentation can be found here: [SIM-900 AT Command Manual](http://wm.sim.com/upfile/2013424141114f.pdf). 
 
 ## Hardware overview/setup
 

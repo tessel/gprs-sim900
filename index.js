@@ -287,7 +287,7 @@ GPRS.prototype.emitMe = function (beginnings) {
   /*
   Args
     beginnings
-      An array of Strings. If an unsolicited packet stats with one fo them, emit it as an event by he same name
+      An array of Strings. If an unsolicited packet starts with one of them, emit it as an event by he same name
 
   Callback parameters
     None, but the events emitted will contain:
