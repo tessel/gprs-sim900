@@ -36,22 +36,25 @@ gprs.on('ready', function() {
   }, 10000);
 });
 
-//  Emit unsolicited messages beginning with... (this is useful in the case of incoming calls and texts)
-gprs.emitMe(['+', 'NORMAL POWER DOWN']);
-
-gprs.on('+', function handlePlus (data) {
-  console.log('\nGot an unsolicited message!\n\t', data);
-});
+//  Emit unsolicited messages beginning with...
+gprs.emitMe(['NORMAL POWER DOWN', 'RING']);
 
 gprs.on('NORMAL POWER DOWN', function powerDaemon () {
   gprs.emit('powered off');
   console.log('The GPRS Module is off now.');
 });
 
-//  Command the GPRS module via the command line with `tessel run gprs.js -m`
-process.on('message', function (data) {
-  console.log('got command', [data.slice(1, data.length - 1)]);
-  gprs._txrx(data.slice(1, data.length - 1), 10000, function(err, data) {
+gprs.on('RING', function someoneCalledUs () {
+  var instructions = 'Someone\'s calling!\nType the command \'ATA\' to answer and \'ATH\' to hang up.\nYou\'ll need a mic and headset connected to talk and hear.\nIf you want to call someone, type \'ATD"[their 10+digit number]"\'.';
+  console.log(instructions);
+});
+
+//  Command the GPRS module via the command line
+process.stdin.resume();
+process.stdin.on('data', function (data) {
+  data = String(data).slice(0, String(data).length-2);  //  Removes the '\n'
+  console.log('got command', [data]);
+  gprs._txrx(data, 10000, function(err, data) {
     console.log('\nreply:\nerr:\t', err, '\ndata:');
     data.forEach(function(d) {
       console.log('\t' + d);
