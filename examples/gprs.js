@@ -52,7 +52,7 @@ gprs.on('RING', function someoneCalledUs () {
 //  Command the GPRS module via the command line
 process.stdin.resume();
 process.stdin.on('data', function (data) {
-  data = String(data).slice(0, String(data).length-2);  //  Removes the '\n'
+  data = String(data).slice(0, -2);  //  Removes the '\r\n' from the end
   console.log('got command', [data]);
   gprs._txrx(data, 10000, function(err, data) {
     console.log('\nreply:\nerr:\t', err, '\ndata:');
