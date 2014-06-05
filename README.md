@@ -1,7 +1,7 @@
 #GPRS/SIM
 Driver for the gprs-sim900 Tessel GPRS/SIM module. The hardware documentation for this module can be found [here](https://github.com/tessel/hardware/blob/master/modules-overview.md#gprs).
 
-If you run into any issues you can ask for support on the [Relay Module Forums](http://forums.tessel.io/category/gprs).
+If you run into any issues you can ask for support on the [GPRS Module Forums](http://forums.tessel.io/category/gprs).
 
 ## Installation
 ```sh
