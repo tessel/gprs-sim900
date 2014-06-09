@@ -37,7 +37,7 @@ gprs.on('ready', function() {
 });
 
 //  Emit unsolicited messages beginning with...
-gprs.emitMe(['NORMAL POWER DOWN', 'RING']);
+gprs.emitMe(['NORMAL POWER DOWN', 'RING', '+']);
 
 gprs.on('NORMAL POWER DOWN', function powerDaemon () {
   gprs.emit('powered off');
@@ -47,6 +47,10 @@ gprs.on('NORMAL POWER DOWN', function powerDaemon () {
 gprs.on('RING', function someoneCalledUs () {
   var instructions = 'Someone\'s calling!\nType the command \'ATA\' to answer and \'ATH\' to hang up.\nYou\'ll need a mic and headset connected to talk and hear.\nIf you want to call someone, type \'ATD"[their 10+digit number]"\'.';
   console.log(instructions);
+});
+
+gprs.on('+', function handlePlus (data) {
+  console.log('Got an unsolicited message that begins with a \'+\'! Data:', data);
 });
 
 //  Command the GPRS module via the command line
