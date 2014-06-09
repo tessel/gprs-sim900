@@ -37,7 +37,7 @@ gprs.on('ready', function() {
 });
 
 //  Emit unsolicited messages beginning with...
-gprs.emitMe(['NORMAL POWER DOWN', 'RING']);
+gprs.emitMe(['NORMAL POWER DOWN', 'RING', '+']);
 
 gprs.on('NORMAL POWER DOWN', function powerDaemon () {
   gprs.emit('powered off');
@@ -49,10 +49,14 @@ gprs.on('RING', function someoneCalledUs () {
   console.log(instructions);
 });
 
+gprs.on('+', function handlePlus (data) {
+  console.log('Got an unsolicited message that begins with a \'+\'! Data:', data);
+});
+
 //  Command the GPRS module via the command line
 process.stdin.resume();
 process.stdin.on('data', function (data) {
-  data = String(data).slice(0, -2);  //  Removes the '\r\n' from the end
+  data = String(data).replace(/[\r\n]*$/, '');  //  Removes the line endings
   console.log('got command', [data]);
   gprs._txrx(data, 10000, function(err, data) {
     console.log('\nreply:\nerr:\t', err, '\ndata:');
