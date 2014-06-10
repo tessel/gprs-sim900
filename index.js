@@ -83,12 +83,16 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
       });
     } else if (!err) {
       self.emit('ready', data);
-      callback && callback(err, data);
-    } else {
-      var errr = new Error('Could not connect to GPRS Module');
-      self.emit('error', errr);
       if (callback) {
-        callback(errr, false);
+        callback(err, data);
+      }
+    } else {
+      err = new Error('Could not connect to GPRS Module');
+      setImmediate(function () {
+        self.emit('error', err);
+      });
+      if (callback) {
+        callback(err, false);
       }
     } 
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
