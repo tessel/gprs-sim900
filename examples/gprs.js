@@ -8,14 +8,13 @@ number of your choice.
 
 var tessel = require('tessel');
 var hardware = tessel.port['A'];
-var baud = 115200; // Typically keep this at 115200, but you can set it to 9600 if you're hitting buffer overflows
+var gprslib = require('../'); // Replace '../' with 'gprs-sim900' in your own code
 
-var phoneNumber = '##########'; // Replace the #s with the String representation of 10+ digit number, including country code (1 for USA)
+var phoneNumber = '##########'; // Replace the #s with the String representation of the phone number, including country code (1 for USA)
 var message = 'Text from a Tessel!';
 
-//  Port, baud (115200 by default), callback
-var gprs = require('../').use(hardware, baud); // Replace '../' with 'gprs-sim900' in your own code
-
+//  Port, callback
+var gprs = gprslib.use(hardware); 
 gprs.on('ready', function() {
   console.log('GPRS module connected to Tessel. Searching for network...')
   //  Give it 10 more seconds to connect to the network, then try to send an SMS
@@ -65,4 +64,9 @@ process.stdin.on('data', function (data) {
     });
     console.log('');
   });
+});
+
+//  Handle errors
+gprs.on('error', function (err) {
+  console.log('Got an error of some kind:\n', err);
 });

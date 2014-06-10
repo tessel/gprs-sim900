@@ -24,21 +24,17 @@ var Postmaster = require('./postmaster.js');
 var DEBUG = false;  //  Debug messages to the console
 
 // Constructor
-function GPRS (hardware, baud) {
+function GPRS (hardware) {
   /*
   Args
     hardware
       The Tessel port to be used for priary communication
-    baud
-      Override the defualt baud rate of 115200 if necessary (for software UART)
   */
 
   var self = this;
 
-  baud = baud || 115200;
-
   self.hardware = hardware;
-  self.uart = new hardware.UART({baudrate: baud});
+  self.uart = new hardware.UART({baudrate: 15200});
   self.power = hardware.digital[2].high();
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
@@ -65,8 +61,8 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
   Callback parameters
     err
       An error
-    contacted
-      Reply from SIM900 module (Array of Strings) OR false if unable to contact
+    self
+      A reference to the GPRS Object
   */
 
   var self = this;
@@ -75,7 +71,7 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
   var patience = 1000;
 
   self._txrx('AT', patience, function checkIfWeContacted(err, data) {
-    if (err && err.type === 'timeout') {
+    if (err && err.type === 'timeout' && rep < reps) {
       //  If we time out on AT, we're likely powered off
       //  Toggle the power and try again
       self.togglePower(function tryAgainAfterToggle() {
@@ -83,11 +79,18 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
       });
     } else if (!err) {
       self.emit('ready', data);
-      callback && callback(err, data);
-    } else if (callback) {
-      self.emit('error', data);
-      callback(err, false);
-    }
+      if (callback) {
+        callback(err, self);
+      }
+    } else {
+      err = new Error('Could not connect to GPRS Module');
+      setImmediate(function () {
+        self.emit('error', err);
+      });
+      if (callback) {
+        callback(err, self);
+      }
+    } 
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
 };
 
@@ -273,12 +276,17 @@ GPRS.prototype._checkEmissions = function () {
 
   var self = this;
   self.postmaster.on('unsolicited', function (data) {
+    var sent = false;
     //  Emit unsolicited packets that begin with specific characters as events
     self.emissions.forEach(function (beginning) {
       if (data.indexOf(beginning) === 0) {
         self.emit(beginning, data);
+        sent = true;
       }
     });
+    if (!sent) {
+      self.emit('unsolicited', data);
+    }
   });
 };
 
@@ -407,13 +415,11 @@ GPRS.prototype.disable = function () {
 }
 
 // Connect the GPRS module and establish contact with the SIM900
-function use(hardware, baud, callback) {
+function use(hardware, callback) {
   /*
   Args
     hardware
       The Tessel port to use for the main GPRS hardware
-    baud
-      Alternate baud rate for the UART
     callback
       Callback frunction for once the module is set up
 
@@ -422,7 +428,7 @@ function use(hardware, baud, callback) {
         Error, if any, while connecting. Passes null if successful.
   */
 
-  var radio = new GPRS(hardware, baud);
+  var radio = new GPRS(hardware);
   radio._establishContact(callback);
   return radio;
 }
