@@ -24,21 +24,17 @@ var Postmaster = require('./postmaster.js');
 var DEBUG = false;  //  Debug messages to the console
 
 // Constructor
-function GPRS (hardware, baud) {
+function GPRS (hardware) {
   /*
   Args
     hardware
       The Tessel port to be used for priary communication
-    baud
-      Override the defualt baud rate of 115200 if necessary (for software UART)
   */
 
   var self = this;
 
-  baud = baud || 115200;
-
   self.hardware = hardware;
-  self.uart = new hardware.UART({baudrate: baud});
+  self.uart = new hardware.UART({baudrate: 15200});
   self.power = hardware.digital[2].high();
   self.packetizer = new Packetizer(self.uart);
   self.packetizer.packetize();
@@ -419,13 +415,11 @@ GPRS.prototype.disable = function () {
 }
 
 // Connect the GPRS module and establish contact with the SIM900
-function use(hardware, baud, callback) {
+function use(hardware, callback) {
   /*
   Args
     hardware
       The Tessel port to use for the main GPRS hardware
-    baud
-      Alternate baud rate for the UART
     callback
       Callback frunction for once the module is set up
 
@@ -434,7 +428,7 @@ function use(hardware, baud, callback) {
         Error, if any, while connecting. Passes null if successful.
   */
 
-  var radio = new GPRS(hardware, baud);
+  var radio = new GPRS(hardware);
   radio._establishContact(callback);
   return radio;
 }
