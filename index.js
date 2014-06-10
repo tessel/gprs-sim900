@@ -228,8 +228,8 @@ GPRS.prototype.dial = function (number, callback) {
 
   if (this.inACall) {
     callback(new Error('Currently in a call'), []);
-  } else if (!number || String(number).length < 10) {
-    callback(new Error('Number must be at least 10 digits'), []);
+  } else if (!number || !String(number).length) {
+    callback(new Error('Did not specify a phone number'), []);
   } else {
     this.inACall = true;
                                   // hang up in a year
@@ -350,8 +350,8 @@ GPRS.prototype.sendSMS = function (number, message, callback) {
       Did it send properly? If yes, get back the ID number of the text in an array; if not, the error and -1 as the ID.
   */
 
-  if (!number || number.length < 10) {
-    callback(new Error('Did not specify a 10+ digit number'), null);
+  if (!number || !number.length) {
+    callback(new Error('Did not specify a phone number'), null);
   } else {
     var self = this;
     message = message || 'text from a Tessel';
