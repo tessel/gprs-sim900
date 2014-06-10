@@ -131,7 +131,7 @@ Read the index specified SMS. Mode can be zero and make the message as read, or 
 ###Events
 
 &#x20;<a href="#api-gprs-on-powerToggled-callback-The-SIM900-has-been-turned-on-or-off" name="api-gprs-on-powerToggled-callback-The-SIM900-has-been-turned-on-or-off">#</a> gprs<b>.on</b>( 'powerToggled', callback() )  
- The SIM900 has been turned on or off  
+The SIM900 has been turned on or off  
 
 &#x20;<a href="#api-gprs-on-ready-callback-The-SIM900-is-ready-to-recieve-commands-Note-that-it-may-not-yet-be-connected-to-the-cell-network" name="api-gprs-on-ready-callback-The-SIM900-is-ready-to-recieve-commands-Note-that-it-may-not-yet-be-connected-to-the-cell-network">#</a> gprs<b>.on</b>( 'ready', callback() )  
  The SIM900 is ready to recieve commands. Note that it may not yet be connected to the cell network.  
