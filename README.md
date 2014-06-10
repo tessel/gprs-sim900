@@ -137,7 +137,7 @@ Read the index specified SMS. Mode can be zero and make the message as read, or 
  The SIM900 is ready to recieve commands. Note that it may not yet be connected to the cell network.  
 
 &#x20;<a href="#api-gprs-on-unsolicited-callback-data" name="api-gprs-on-unsolicited-callback-data">#</a> gprs<b>.on</b>( 'unsolicited', callback(data) )  
- Called when the SIM900 send an unsolicited packet to the Tessel. `data` is the contents of the message.
+ Called when the SIM900 send an unsolicited packet to the Tessel. data is the contents of the message.
 
 &#x20;<a href="#api-gprs-on-_intermediate-callback-correct-Used-internally-for-_chain" name="api-gprs-on-_intermediate-callback-correct-Used-internally-for-_chain">#</a> gprs<b>.on</b>( '_intermediate', callback(correct) )  
  Used internally for _chain  
