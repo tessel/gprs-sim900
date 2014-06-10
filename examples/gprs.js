@@ -66,3 +66,8 @@ process.stdin.on('data', function (data) {
     console.log('');
   });
 });
+
+//  Handle errors
+gprs.on('error', function (err) {
+  console.log('Got an error of some kind:\n', err);
+});
