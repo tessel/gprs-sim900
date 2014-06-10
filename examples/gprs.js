@@ -9,7 +9,7 @@ number of your choice.
 var tessel = require('tessel');
 var hardware = tessel.port['A'];
 
-var phoneNumber = '##########'; // Replace the #s with the String representation of 10+ digit number, including country code (1 for USA)
+var phoneNumber = '##########'; // Replace the #s with the String representation of the phone number, including country code (1 for USA)
 var message = 'Text from a Tessel!';
 
 //  Port, callback
