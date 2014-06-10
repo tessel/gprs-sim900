@@ -24,6 +24,9 @@ If the yellow `STATUS` light is on and the green `NETLIGHT` is blinking when the
 ###Example
 
 ```js
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
 /*********************************************
 Use the GPRS module to send a text to a phone
 number of your choice.
@@ -31,13 +34,12 @@ number of your choice.
 
 var tessel = require('tessel');
 var hardware = tessel.port['A'];
-var baud = 115200; // Typically keep this at 115200, but you can set it to 9600 if you're hitting buffer overflows
 
-var phoneNumber = '##########'; // Replace the #s with the String representation of 10+ digit number, including country code (1 for USA)
+var phoneNumber = '##########'; // Replace the #s with the String representation of the phone number, including country code (1 for USA)
 var message = 'Text from a Tessel!';
 
-//  Port, baud (115200 by default), callback
-var gprs = require('../').use(hardware, baud); // Replace '../' with 'gprs-sim900' in your own code
+//  Port, callback
+var gprs = require('../').use(hardware); // Replace '../' with 'gprs-sim900' in your own code
 
 gprs.on('ready', function() {
   console.log('GPRS module connected to Tessel. Searching for network...')
@@ -60,7 +62,7 @@ gprs.on('ready', function() {
 });
 
 //  Emit unsolicited messages beginning with...
-gprs.emitMe(['NORMAL POWER DOWN', 'RING']);
+gprs.emitMe(['NORMAL POWER DOWN', 'RING', '+']);
 
 gprs.on('NORMAL POWER DOWN', function powerDaemon () {
   gprs.emit('powered off');
@@ -72,10 +74,14 @@ gprs.on('RING', function someoneCalledUs () {
   console.log(instructions);
 });
 
+gprs.on('+', function handlePlus (data) {
+  console.log('Got an unsolicited message that begins with a \'+\'! Data:', data);
+});
+
 //  Command the GPRS module via the command line
 process.stdin.resume();
 process.stdin.on('data', function (data) {
-  data = String(data).slice(0, -2);  //  Removes the '\r\n' from the end
+  data = String(data).replace(/[\r\n]*$/, '');  //  Removes the line endings
   console.log('got command', [data]);
   gprs._txrx(data, 10000, function(err, data) {
     console.log('\nreply:\nerr:\t', err, '\ndata:');
@@ -85,6 +91,12 @@ process.stdin.on('data', function (data) {
     console.log('');
   });
 });
+
+//  Handle errors
+gprs.on('error', function (err) {
+  console.log('Got an error of some kind:\n', err);
+});
+
 ```
 
 ###Methods
