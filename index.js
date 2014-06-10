@@ -21,7 +21,7 @@ var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
 
-var DEBUG = false;  //  Debug messages to the console
+var DEBUG = true;  //  Debug messages to the console
 
 // Constructor
 function GPRS (hardware, baud) {
@@ -75,7 +75,7 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
   var patience = 1000;
 
   self._txrx('AT', patience, function checkIfWeContacted(err, data) {
-    if (err && err.type === 'timeout') {
+    if (err && err.type === 'timeout' && rep < reps) {
       //  If we time out on AT, we're likely powered off
       //  Toggle the power and try again
       self.togglePower(function tryAgainAfterToggle() {
@@ -84,10 +84,13 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
     } else if (!err) {
       self.emit('ready', data);
       callback && callback(err, data);
-    } else if (callback) {
-      self.emit('error', data);
-      callback(err, false);
-    }
+    } else {
+      var errr = new Error('Could not connect to GPRS Module');
+      self.emit('error', errr);
+      if (callback) {
+        callback(errr, false);
+      }
+    } 
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
 };
 
