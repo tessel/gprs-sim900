@@ -61,8 +61,8 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
   Callback parameters
     err
       An error
-    contacted
-      Reply from SIM900 module (Array of Strings) OR false if unable to contact
+    self
+      A reference to the GPRS Object
   */
 
   var self = this;
@@ -80,7 +80,7 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
     } else if (!err) {
       self.emit('ready', data);
       if (callback) {
-        callback(err, data);
+        callback(err, self);
       }
     } else {
       err = new Error('Could not connect to GPRS Module');
@@ -88,7 +88,7 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
         self.emit('error', err);
       });
       if (callback) {
-        callback(err, false);
+        callback(err, self);
       }
     } 
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
