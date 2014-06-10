@@ -280,12 +280,17 @@ GPRS.prototype._checkEmissions = function () {
 
   var self = this;
   self.postmaster.on('unsolicited', function (data) {
+    var sent = false;
     //  Emit unsolicited packets that begin with specific characters as events
     self.emissions.forEach(function (beginning) {
       if (data.indexOf(beginning) === 0) {
         self.emit(beginning, data);
+        sent = true;
       }
     });
+    if (!sent) {
+      self.emit('unsolicited', data);
+    }
   });
 };
 
