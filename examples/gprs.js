@@ -8,13 +8,13 @@ number of your choice.
 
 var tessel = require('tessel');
 var hardware = tessel.port['A'];
+var gprslib = require('../'); // Replace '../' with 'gprs-sim900' in your own code
 
 var phoneNumber = '##########'; // Replace the #s with the String representation of the phone number, including country code (1 for USA)
 var message = 'Text from a Tessel!';
 
 //  Port, callback
-var gprs = require('../').use(hardware); // Replace '../' with 'gprs-sim900' in your own code
-
+var gprs = gprslib.use(hardware); 
 gprs.on('ready', function() {
   console.log('GPRS module connected to Tessel. Searching for network...')
   //  Give it 10 more seconds to connect to the network, then try to send an SMS
