@@ -21,7 +21,7 @@ var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
 
-var DEBUG = true;  //  Debug messages to the console
+var DEBUG = false;  //  Debug messages to the console
 
 // Constructor
 function GPRS (hardware, baud) {
