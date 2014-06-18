@@ -307,14 +307,19 @@ GPRS.prototype.emitMe = function (beginnings) {
   beginnings.forEach(function (beginning) {
     self.emissions.push(beginning);
   });
+  console.log(this.emissions.length);
+  console.log(this.emissions);
+  console.log(beginnings.length);
+  console.log(beginnings);
   if (this.emissions.length === beginnings.length) {
     //  This is the first time this was called, you should start notifying
+    console.log('boop');
     this._checkEmissions();
   }
 };
 
 // Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card. 
-GPRS.prototype.readSMS = function (index, mode, callback) {
+GPRS.prototype.readSMS = function (index, mode, remove, callback) {
   /*
   Args - two possibilities
     index
@@ -322,6 +327,9 @@ GPRS.prototype.readSMS = function (index, mode, callback) {
     mode
       0 - Mark the message as read
       1 - Do not chage the status of the message
+    remove
+      0 - Keep the message on the simcard
+      1 - Delete the message from the simcard once it is marked read.
     callback
       Callback function
 
@@ -336,8 +344,13 @@ GPRS.prototype.readSMS = function (index, mode, callback) {
         3 - 'OK'
       if successful
   */
-
-  this._txrx('AT+CMGR=' + index + ',' + mode, 10000, callback);
+  var self = this;
+  this._txrx('AT+CMGR=' + index + ',' + mode, 10000, function (err, message) {
+    if (remove==1) {
+      self._txrx('AT+CMGD=' + index, 10000)
+    }
+    callback(err, message);
+  });
 };
 
 // Send an SMS to the specified number

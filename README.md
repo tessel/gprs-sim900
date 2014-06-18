@@ -21,8 +21,10 @@ npm install gprs-sim900
 
 If the yellow `STATUS` light is on and the green `NETLIGHT` is blinking when the module is plugged in, then the module is configured correctly.
 
-###Example
+###A Note About SIM Cards
+SIM cards can only hold 20-30 SMS messages at a time, depending on the sim card you have. If your SIM stops emiting events as expected, you can use the command line and the AT command manual to manually delete messages you do not want to keep on the SIM, or you can use the remove option included in the readSMS function to automatically delete messages after you read or log the messages.
 
+###Example
 ```js
 // Any copyright is dedicated to the Public Domain.
 // http://creativecommons.org/publicdomain/zero/1.0/
@@ -120,8 +122,11 @@ Call the specified number (voice call, not data call ).
 &#x20;<a href="#api-gprs-emitMe-beginnings-Many-unsolicited-events-are-very-useful-to-the-user-such-as-when-an-SMS-is-received-or-a-call-is-pending-Beginnings-is-an-array-of-strings-the-function-will-emit-unsolicited-messages-that-begin-with-these-strings-There-is-probably-a-better-way-to-do-this-so-consider-the-function-unstable-and-pull-requests-welcome" name="api-gprs-emitMe-beginnings-Many-unsolicited-events-are-very-useful-to-the-user-such-as-when-an-SMS-is-received-or-a-call-is-pending-Beginnings-is-an-array-of-strings-the-function-will-emit-unsolicited-messages-that-begin-with-these-strings-There-is-probably-a-better-way-to-do-this-so-consider-the-function-unstable-and-pull-requests-welcome">#</a> gprs<b>.emitMe</b>( beginnings )  
  Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. Beginnings is an array of strings, the function will emit unsolicited messages that begin with these strings. There is probably a better way to do this, so consider the function unstable and pull requests welcome.  
 
-&#x20;<a href="#api-gprs-readSMS-index-mode-callback-err-message-Read-the-index-specified-SMS-Mode-can-be-zero-and-make-the-message-as-read-or-one-and-not-change-the-status-of-the-message-The-callback-s-message-is-an-array-where-index-0-command-echo-1-message-information-read-state-source-number-data-2-message-text" name="api-gprs-readSMS-index-mode-callback-err-message-Read-the-index-specified-SMS-Mode-can-be-zero-and-make-the-message-as-read-or-one-and-not-change-the-status-of-the-message-The-callback-s-message-is-an-array-where-index-0-command-echo-1-message-information-read-state-source-number-data-2-message-text">#</a> gprs<b>.readSMS</b>( index, mode, callback(err, message) )   
-Read the index specified SMS. Mode can be zero and make the message as read, or one and not change the status of the message. The callback's message is an array where index 0: command echo, 1: message information (read state, source number, data), 2: message text.
+&#x20;<a href="#api-gprs-readSMS-index-mode-callback-err-message-Read-the-index-specified-SMS-Mode-can-be-zero-and-make-the-message-as-read-or-one-and-not-change-the-status-of-the-message-The-callback-s-message-is-an-array-where-index-0-command-echo-1-message-information-read-state-source-number-data-2-message-text" name="api-gprs-readSMS-index-mode-callback-err-message-Read-the-index-specified-SMS-Mode-can-be-zero-and-make-the-message-as-read-or-one-and-not-change-the-status-of-the-message-The-callback-s-message-is-an-array-where-index-0-command-echo-1-message-information-read-state-source-number-data-2-message-text">#</a> gprs<b>.readSMS</b>( index, mode, remove, callback(err, message) )   
+Read the index specified SMS. 
+* Mode can be zero and make the message as read, or one and not change the status of the message. 
+* Remove can be zero and keep the message on the sim card, or one and delete the message from the sim card. This is useful because sim cards can only hold around 20-30 messages at a time.
+* The callback's message is an array where index 0: command echo, 1: message information (read state, source number, data), 2: message text.
 
 &#x20;<a href="#api-gprs-sendSMS-number-message-callback-err-data-Send-an-SMS-to-the-specified-number" name="api-gprs-sendSMS-number-message-callback-err-data-Send-an-SMS-to-the-specified-number">#</a> gprs<b>.sendSMS</b>( number, message, callback(err, data) )  
  Send an SMS to the specified number.  
@@ -146,6 +151,29 @@ The SIM900 has been turned on or off
 ###GPRS sim-900 AT Commands
 
 The GPRS module follows the sim-900 AT command structure. The full documentation can be found here: [SIM-900 AT Command Manual](http://wm.sim.com/upfile/2013424141114f.pdf). 
+
+You can enter these commands in your console if your Tessel is running a script that contains the following code.
+
+```js
+//  Command the GPRS module via the command line
+process.stdin.resume();
+process.stdin.on('data', function (data) {
+  data = String(data).replace(/[\r\n]*$/, '');  //  Removes the line endings
+  console.log('got command', [data]);
+  gprs._txrx(data, 10000, function(err, data) {
+    console.log('\nreply:\nerr:\t', err, '\ndata:');
+    data.forEach(function(d) {
+      console.log('\t' + d);
+    });
+    console.log('');
+  });
+});
+```
+
+####Useful Commands
+* Retreive texts (SMS) by typing `AT+CMGR=<index of message>`
+* Delete texts by typing  `AT+CMGD=<index of message>`
+* Other commands can be found the the extensive command manual
 
 ###Hardware overview/setup
 The GPRS module requries some setup in hardware in order to function properly. The image below highlights portions of the module users may need to configure.
