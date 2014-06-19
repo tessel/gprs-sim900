@@ -189,6 +189,7 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
         for (var i = 0; i < data.length; i++) {
           //  Allow start of transmission packets to be valid
           correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
+          console.log('correct', correct, data);
         }
       }
       self.emit('_intermediate', correct);
@@ -391,9 +392,14 @@ GPRS.prototype.sendSMS = function (number, message, callback) {
   }
 };
 
-GPRS.prototype.requestGET = function(idAddress, cb) {
+
+GPRS.prototype.requestGET = function(webAddress, callback) {
   
   var self = this;
+
+  if(!webAddress) {
+    callback(new Error('Did not specify a webAddress'), null);
+  }
 
   var commands = new CommandChain([{
     message: 'AT+SAPBR=1,1',
@@ -404,13 +410,13 @@ GPRS.prototype.requestGET = function(idAddress, cb) {
     patience: 5000,
     expected: ['AT+HTTPINIT', 'OK']
   }, {
-    message: 'AT+HTTPPARA=\"CID\",1',
+    message: 'AT+HTTPPARA="CID",1',
     patience: 5000,
-    expected: ['AT+HTTPPARA=\"CID\",1', 'OK']
+    expected: ['AT+HTTPPARA="CID",1', 'OK']
   }, {
-    message: 'AT+HTTPPARA=\"URL\",\"www.posttestserver.com/post.php?dir=mattmiller\"',
+    message: 'AT+HTTPPARA="URL","'+webAddress+'"',
     patience: 5000,
-    expected: ['AT+HTTPPARA=\"URL\",\"www.posttestserver.com/post.php?dir=mattmiller\"', 'OK']
+    expected: ['AT+HTTPPARA="URL","'+webAddress+'"', 'OK']
   }, {
     message: 'AT+HTTPACTION=0',
     patience: 5000,
@@ -421,11 +427,11 @@ GPRS.prototype.requestGET = function(idAddress, cb) {
     expected: ['AT+HTTPTERM']
   }]);
 
-  console.log(commands.getMessages());
-
   self._chain(commands.getMessages(), commands.getPatiences(), commands.getExpected(), function(errr, data) {
-    console.log('DONE!!!');
-    console.log(data);
+    if(errr) {
+      return callback(errr);
+    }
+    callback(null, 'data sent'); 
   });
 
 }
