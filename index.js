@@ -416,10 +416,6 @@ GPRS.prototype.requestGET = function(idAddress, cb) {
     patience: 5000,
     expected: ['AT+HTTPACTION=0']
   }, {
-    message: 'AT+HTTPREAD',
-    patience: 5000,
-    expected: ['AT+HTTPREAD', 'OK']
-  }, {
     message: 'AT+HTTPTERM',
     patience: 5000,
     expected: ['AT+HTTPTERM']
