@@ -400,8 +400,8 @@ GPRS.prototype.requestGET = function(idAddress, cb) {
     var self = this;
     var commands  = [
       // init
-      'AT+SAPBR=3,1,\"Contype\",\"GPRS\"', // OK
-      'AT+SAPBR=3,1,\"APN\",\"epc.tmobile.com\"', // OK
+      //'AT+SAPBR=3,1,\"Contype\",\"GPRS\"', // OK
+      //'AT+SAPBR=3,1,\"APN\",\"epc.tmobile.com\"', // OK
       'AT+SAPBR=1,1',
 
       // get request
@@ -416,11 +416,11 @@ GPRS.prototype.requestGET = function(idAddress, cb) {
       // close
       'AT+HTTPTERM' // OK
     ];
-    var patiences = [240000, 240000, 240000, 240000, 240000, 240000, 240000, 240000, 240000];
+    var patiences = [240000, 240000, 240000, 240000, 240000, 240000, 240000];
     var replies = [
       // init
-      ['AT+SAPBR=3,1,\"Contype\",\"GPRS\"', 'OK'],
-      ['AT+SAPBR=3,1,\"APN\",\"epc.tmobile.com\"', 'OK'],
+      //['AT+SAPBR=3,1,\"Contype\",\"GPRS\"', 'OK'],
+      //['AT+SAPBR=3,1,\"APN\",\"epc.tmobile.com\"', 'OK'],
       ['AT+SAPBR=1,1', 'OK'],
 
       // get request
