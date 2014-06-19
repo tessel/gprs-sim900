@@ -390,6 +390,58 @@ GPRS.prototype.sendSMS = function (number, message, callback) {
   }
 };
 
+GPRS.prototype.requestGET = function(idAddress, cb) {
+  
+  var self = this;
+
+  console.log('Trying to connect to ', idAddress);
+  var str = 'AT+HTTPPARA=' + 'URL' + ',' + ipAddress;
+  
+    var self = this;
+    var commands  = [
+      // init
+      'AT+SAPBR=3,1,\"Contype\",\"GPRS\"', // OK
+      'AT+SAPBR=3,1,\"APN\",\"epc.tmobile.com\"', // OK
+      'AT+SAPBR=1,1',
+
+      // get request
+      'AT+HTTPINIT', // OK
+      'AT+HTTPPARA=\"CID\",1', // OK
+      'AT+HTTPPARA=\"URL\",\"www.posttestserver.com/post.php?dir=mattmiller\"', //OK
+      'AT+HTTPACTION=0', // 1 = GET, 2 = POST
+
+      // read
+      'AT+HTTPREAD', // >
+
+      // close
+      'AT+HTTPTERM' // OK
+    ];
+    var patiences = [240000, 240000, 240000, 240000, 240000, 240000, 240000, 240000, 240000];
+    var replies = [
+      // init
+      ['AT+SAPBR=3,1,\"Contype\",\"GPRS\"', 'OK'],
+      ['AT+SAPBR=3,1,\"APN\",\"epc.tmobile.com\"', 'OK'],
+      ['AT+SAPBR=1,1', 'OK'],
+
+      // get request
+      ['AT+HTTPINIT', 'OK'],
+      ['AT+HTTPPARA=\"CID\",1', 'OK'],
+      ['AT+HTTPPARA=\"URL\",\"www.posttestserver.com/post.php?dir=mattmiller\"', 'OK'],
+      ['AT+HTTPACTION=0'], 
+
+      // read
+      ['AT+HTTPREAD', 'OK'],
+
+      // close
+      ['AT+HTTPTERM', 'OK']
+    ];
+
+    self._chain(commands, patiences, replies, function (errr, data) {
+      console.log('DONE!!!');
+      console.log(data);
+    });
+
+}
 // Turn the module on or off by switching the power button (G3) electronically
 GPRS.prototype.togglePower = function (callback) {
   var self = this;
