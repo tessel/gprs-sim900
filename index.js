@@ -433,7 +433,7 @@ GPRS.prototype.requestGET = function(idAddress, cb) {
       ['AT+HTTPREAD', 'OK'],
 
       // close
-      ['AT+HTTPTERM', 'OK']
+      ['AT+HTTPTERM']
     ];
 
     self._chain(commands, patiences, replies, function (errr, data) {
