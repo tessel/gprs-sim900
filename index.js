@@ -189,7 +189,6 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
         for (var i = 0; i < data.length; i++) {
           //  Allow start of transmission packets to be valid
           correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
-          console.log('correct', correct, data);
         }
       }
       self.emit('_intermediate', correct);
@@ -392,17 +391,35 @@ GPRS.prototype.sendSMS = function (number, message, callback) {
   }
 };
 
-
+// perform a simple GET request to a web address
 GPRS.prototype.requestGET = function(webAddress, callback) {
-  
+  /*
+  Args
+    webAddress
+      String, the web address to perform GET request to.
+    callback
+      Callback function
+
+  Callback parameters
+    err
+      Error message or null
+    success
+      Boolean, true 
+  */
+
   var self = this;
 
   if(!webAddress) {
     callback(new Error('Did not specify a webAddress'), null);
   }
 
+  // AT+SAPBR=1,1 tells the module we are ready to send. 
+  // note that in some cases you might need to send credentials
+  // first, including apn, username, and password.
+  // But in my testing with a T-Mobile phone+data SIM card, 
+  // this was not needed. 
   var commands = new CommandChain([{
-    message: 'AT+SAPBR=1,1',
+    message: 'AT+SAPBR=1,1', 
     patience: 5000,
     expected: ['AT+SAPBR=1,1', 'OK']
   }, {
@@ -418,11 +435,11 @@ GPRS.prototype.requestGET = function(webAddress, callback) {
     patience: 5000,
     expected: ['AT+HTTPPARA="URL","'+webAddress+'"', 'OK']
   }, {
-    message: 'AT+HTTPACTION=0',
+    message: 'AT+HTTPACTION=0', // 0 = GET, 1 = POST
     patience: 5000,
     expected: ['AT+HTTPACTION=0']
   }, {
-    message: 'AT+HTTPTERM',
+    message: 'AT+HTTPTERM', // terminate HTTP, requiring that we INIT next time
     patience: 5000,
     expected: ['AT+HTTPTERM']
   }]);
@@ -431,7 +448,7 @@ GPRS.prototype.requestGET = function(webAddress, callback) {
     if(errr) {
       return callback(errr);
     }
-    callback(null, 'data sent'); 
+    callback(null, true); 
   });
 
 }
