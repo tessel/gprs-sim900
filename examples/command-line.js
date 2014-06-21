@@ -9,10 +9,10 @@ Reference document:
 http://www.simcom.us/act_admin/supportfile/SIM900_HD_V1.01(091226).pdf
 
 !!! Important Note:
-some commands can't normally be sent in the command line, 
+some commands are not possible to send in the command line, 
 for example Ctrl+Z which is required to end an SMS input. To get 
 around this, certain inputs trigger these special commands. 
-See the line `if(data === '^Z')` below.
+See the line `if(data === '^z')` below.
 
 You may need to add more depending on your needs.  
 *********************************************/
@@ -25,7 +25,12 @@ var gprslib = require('../'); // Replace '../' with 'gprs-sim900' in your own co
 var gprs = gprslib.use(hardware); 
 gprs.on('ready', function() {
   console.log('GPRS module connected to Tessel.');
-  console.log('Searching for network... try some commands!');
+  console.log('-------');
+  console.log('You can now send AT commands. Try: `AT+CGATT?`.');
+  console.log('This command will return `+CGATT: (0|1)`, where 1');
+  console.log('means the module is connected to a network.');
+  console.log('-------');
+  console.log('Searching for network now...');
 });
 
 //  Command the GPRS module via the command line
