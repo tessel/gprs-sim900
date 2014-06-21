@@ -145,7 +145,10 @@ The SIM900 has been turned on or off
 
 ###GPRS sim-900 AT Commands
 
-The GPRS module follows the sim-900 AT command structure. The full documentation can be found here: [SIM-900 AT Command Manual](http://wm.sim.com/upfile/2013424141114f.pdf). 
+The GPRS module follows the sim-900 AT command structure. The full documentation can be found here: [SIM-900 AT Command Manual](http://wm.sim.com/upfile/2013424141114f.pdf).
+
+You can control the GPRS module from the command line using the `command-line.js` example in the `examples/` directory. For example, you can check if your Tessel is connected to a network by running `AT+GCATT?`. 
+
 
 ###Hardware overview/setup
 The GPRS module requries some setup in hardware in order to function properly. The image below highlights portions of the module users may need to configure.
