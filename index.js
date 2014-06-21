@@ -42,7 +42,7 @@ function GPRS (hardware) {
   self.emissions = [];
   self.powered = null;
   //  The defaults are fine for most of Postmaster's args
-  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
+  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ', 'DOWNLOAD']);
 }
 
 util.inherits(GPRS, EventEmitter);
