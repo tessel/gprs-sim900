@@ -31,7 +31,8 @@ var EventEmitter = require('events').EventEmitter;
 */
 Array.prototype.softContains = function(searchStr) {
   for (var i=0; i<this.length; i++) {
-    console.log('---->>>', this[i], searchStr, this[i].indexOf(searchStr), searchStr.indexOf(this[i]));
+    // sometime array values could be buffers! 
+    if(typeof this[i] !== 'string') return false; 
     if(this[i].indexOf(searchStr) !== -1) return true;
     if(searchStr.indexOf(this[i]) !== -1) return true;
   }
