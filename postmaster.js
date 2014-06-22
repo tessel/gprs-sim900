@@ -112,7 +112,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // returns true is data is contained in alternate array
     // which is determined by comparing the length of the array to the 
     // length of the array when we remove items matching data
-    function isDataInAlternateStartsArray() {
+    function isPartialDataInStartsArray() {
       if(!usingAlternate) return false;
       return removeItemsMatchingData(starts, data).length != starts.length;
     }
@@ -122,17 +122,28 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     console.log('hasStarted', hasStarted());
     console.log('relaxedStartChecking', relaxedStartChecking);
     console.log('isDataInStartsArray', isDataInStartsArray());
-    console.log('isDataInAlternateStartsArray', isDataInAlternateStartsArray());
+    console.log('isPartialDataInStartsArray', isPartialDataInStartsArray());
     console.log('---------------');
 
+    // if we aren't busy, 
+    // or if we are busy but the first part of the reply doesn't match the message, 
+    // or if we are busy and we are using alternates and 
+    // it's unsolicited
     function checkIsUnsolicited() {
       if(!hasCallback()) return true;
-      if(hasCallback() && !hasStarted() && !isDataInStartsArray()) return true;
-      if(!usingAlternate) return true;
-      if(!relaxedStartChecking) return true;
-      if(!isDataInAlternateStartsArray()) return true;
+      if(!hasStarted() && !isDataInStartsArray()) return true;
+      if(!hasStarted() && relaxedStartChecking && !isPartialDataInStartsArray()) return true;
       return false;
     }
+
+    // ---------------
+    // hasCallback true
+    // hasStarted true
+    // relaxedStartChecking false
+    // isDataInStartsArray false
+    // isPartialDataInStartsArray false
+    // ---------------
+
 
     var isUnsolicited = checkIsUnsolicited();
 
