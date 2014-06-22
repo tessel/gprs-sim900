@@ -7,6 +7,29 @@ to route them appropriately.
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
+/**
+* Iterate each value of array and check if value contains
+* a specific string. 
+* 
+* Differs from indexOf in that it performs indexOf on each
+* value in the string, so only a partial match is needed.  
+*
+* @param string, the string to search for 
+* @returns true if match, else false
+* @note will return true at first occurrence of match
+* @example:
+* ['Apple', 'Pear'].indexOf('Pear') === 1
+* ['Apple', 'Pear'].indexOf('Pe') === -1
+* ['Apple', 'Pear'].softContains('Pe') === true
+*
+*/
+Array.prototype.softContains = function(searchStr) {
+  for (var i=0; i<this.length; i++) {
+    if(this[i].indexOf(searchStr) !== -1) return true;
+  }
+  return false;
+}
+
 function Postmaster (myPacketizer, enders, overflow, size, debug) {
   /*
   Constructor for the postmaster
@@ -55,19 +78,20 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // If true, the values of `start` only need to exist 
     // within the incoming data, instead of at the beginning of the packet. 
     // Good for posts with known headers but unknown bodies
-    var relaxedStartChecking = false;
-    // if true, we are using alternate starts and enders
-    var usingAlternate = false;
+    var relaxedStartChecking, usingAlternate;
     
+    // if true, we are using alternate starts and enders
     if (self.alternate) {
-      // use the alternate starts, enders, and optionally
-      // use relaxed checking for starts
+      // use the alternate starts, enders
       usingAlternate = true;
-      // array of valid start strings
-      // ex: ['AT', '\\x00AT', '\x00AT', 'OK']
+      // array of valid start strings, ex: ['AT', 'OK', 'LETS BEGIN']
       starts = self.alternate[0]; 
       enders = self.alternate[1];
+      // use relaxed checking for starts
       relaxedStartChecking = self.alternate[2] ? true : false;
+    } else {
+      usingAlternate = false;
+      relaxedStartChecking = false;
     }
 
     if (self.debug) {
@@ -86,35 +110,29 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return starts.indexOf(data) === -1 ? false : true;
     }
 
-    // filter an array of strings, removing strings 
-    // that contain the string _data.
-    //
-    // ['OK', 'TWO'].indexOf('T') 
-    // equals false
-    //  
-    // ['OK', 'TWO'].each(function(str) { return str.indexOf('T') }
-    // equals true
-    //
-    // we need to use this because _data is the packet returned from
-    // chip, and sometimes it will contain other characters in addition
-    // to the string we want, for example 
-    // _data = '> OK', in this case we need the second example check
-    //
-    function removeItemsMatchingData(_array, _data) {
-      return _array.filter(function(partialStart) {
-        if (self.debug) {
-          console.log('-->',[_data], [partialStart], _data.indexOf(partialStart));
-        }
-        return _data.indexOf(partialStart) === -1;
-      });
-    }
-
     // returns true is data is contained in alternate array
     // which is determined by comparing the length of the array to the 
     // length of the array when we remove items matching data
+    //
+    // Sometimes packet contains other characters in addition to
+    // the string we want, for example:
+    //   ['OK=2'].indexOf('OK')
+    // in this case indexOf will not be truthy, while
+    //   ['OK=1'].softContains('OK')
+    // will be truthy.
+    // 
+    // These type of responses from the sim900 chip are common when querying
+    // statuses. For example 
+    //   AT+CGATT?
+    // will return differently based on status, for example both
+    //   +CGATT: 0
+    //   +CGATT: 1
+    // are valid responses. By using softSearch we can assure that both
+    // are valid enders. 
+    //
     function isPartialDataInStartsArray() {
       if(!usingAlternate) return false;
-      return removeItemsMatchingData(starts, data).length != starts.length;
+      return starts.softContains(data);
     }
 
     console.log('---------------');
@@ -135,15 +153,6 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       if(!hasStarted() && relaxedStartChecking && !isPartialDataInStartsArray()) return true;
       return false;
     }
-
-    // ---------------
-    // hasCallback true
-    // hasStarted true
-    // relaxedStartChecking false
-    // isDataInStartsArray false
-    // isPartialDataInStartsArray false
-    // ---------------
-
 
     var isUnsolicited = checkIsUnsolicited();
 
