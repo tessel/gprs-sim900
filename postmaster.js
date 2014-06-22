@@ -46,28 +46,111 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
   
   //  when we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
-    var starts = [self.message];
+    // wraps message as default start
+    // this means a reply packet must start with the message
+    // to be valid. 
+    // ex: ['AT']
+    var starts = [self.message]; 
     var enders = self.enders;
+    // If true, the values of `start` only need to exist 
+    // within the incoming data, instead of at the beginning of the packet. 
+    // Good for posts with known headers but unknown bodies
+    var relaxedStartChecking = false;
+    // if true, we are using alternate starts and enders
+    var usingAlternate = false;
+    
     if (self.alternate) {
-      //  use the alternate starts and ends
-      starts = self.alternate[0];
+      // use the alternate starts, enders, and optionally
+      // use relaxed checking for starts
+      usingAlternate = true;
+      // array of valid start strings
+      // ex: ['AT', '\\x00AT', '\x00AT', 'OK']
+      starts = self.alternate[0]; 
       enders = self.alternate[1];
+      relaxedStartChecking = self.alternate[2] ? true : false;
     }
 
     if (self.debug) {
       console.log('postmaster got packet: ' + [data], '\nstarts:', starts, '\nenders:', enders);
     }
 
-    //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) 
-      && !(!self.started && self.alternate && self.alternate[2] 
-      && self.alternate[0].filter(function(partialStart) {
+    function hasCallback() {
+      return self.callback !== null; 
+    }
+
+    function hasStarted() {
+      return self.started;
+    }
+
+    function isDataInStartsArray() {
+      return starts.indexOf(data) === -1 ? false : true;
+    }
+
+    // filter an array of strings, removing strings 
+    // that contain the string _data.
+    //
+    // ['OK', 'TWO'].indexOf('T') 
+    // equals false
+    //  
+    // ['OK', 'TWO'].each(function(str) { return str.indexOf('T') }
+    // equals true
+    //
+    // we need to use this because _data is the packet returned from
+    // chip, and sometimes it will contain other characters in addition
+    // to the string we want, for example 
+    // _data = '> OK', in this case we need the second example check
+    //
+    function removeItemsMatchingData(_array, _data) {
+      return _array.filter(function(partialStart) {
         if (self.debug) {
-          console.log([data], [partialStart], data.indexOf(partialStart));
+          console.log('-->',[_data], [partialStart], _data.indexOf(partialStart));
         }
-        return data.indexOf(partialStart) === -1;
-      }).length != self.alternate[0].length)) {
+        return _data.indexOf(partialStart) === -1;
+      });
+    }
+
+    // returns true is data is contained in alternate array
+    // which is determined by comparing the length of the array to the 
+    // length of the array when we remove items matching data
+    function isDataInAlternateStartsArray() {
+      if(!usingAlternate) return false;
+      return removeItemsMatchingData(starts, data).length != starts.length;
+    }
+
+    console.log('---------------');
+    console.log('hasCallback', hasCallback());
+    console.log('hasStarted', hasStarted());
+    console.log('relaxedStartChecking', relaxedStartChecking);
+    console.log('isDataInStartsArray', isDataInStartsArray());
+    console.log('isDataInAlternateStartsArray', isDataInAlternateStartsArray());
+    console.log('---------------');
+
+    function checkIsUnsolicited() {
+      if(!hasCallback()) return true;
+      if(hasCallback() && !hasStarted() && !isDataInStartsArray()) return true;
+      if(!usingAlternate) return true;
+      if(!relaxedStartChecking) return true;
+      if(!isDataInAlternateStartsArray()) return true;
+      return false;
+    }
+
+    var isUnsolicited = checkIsUnsolicited();
+
+    // if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
+    //     if (self.debug) {
+    //       console.log([data], [partialStart], data.indexOf(partialStart));
+    //     }
+    //     return data.indexOf(partialStart) === -1;
+    //   }).length != self.alternate[0].length)) {
+    //   //  ^check that we're not using soft logic either...
+    //   self.emit('unsolicited', data); 
+    // }
+
+    //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
+    if (isUnsolicited) {
       //  ^check that we're not using soft logic either...
+      console.log('->>>>>>>>>> unsolicited');
+      console.log(data);
       self.emit('unsolicited', data); 
     }
     else {
