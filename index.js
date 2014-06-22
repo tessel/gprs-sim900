@@ -399,7 +399,7 @@ GPRS.prototype.sendSMS = function (number, message, callback) {
       var err = errr || new Error('Unable to send SMS');
       if (correct) {
         self._txrx(new Buffer([0x1a]), 10000, function (err, data) {
-          if (data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
+          if (data && data[0] && data[0].indexOf('+CMGS: ') === 0 && data[1] == 'OK') {
             //  message sent!
             id = parseInt(data[0].slice(7), 10);
             err = null;
