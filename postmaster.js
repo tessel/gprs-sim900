@@ -24,12 +24,12 @@ var EventEmitter = require('events').EventEmitter;
 * ['Apple', 'Pear'].indexOf('Pe') === -1
 * ['Apple', 'Pear'].indexOf('Pearing') === -1
 * 
-* ['Apple', 'Pear'].softCompare('Pear') === true
-* ['Apple', 'Pear'].softCompare('Pe') === true
-* ['Apple', 'Pear'].softCompare('Pearing') === true
+* ['Apple', 'Pear'].softContains('Pear') === true
+* ['Apple', 'Pear'].softContains('Pe') === true
+* ['Apple', 'Pear'].softContains('Pearing') === true
 *
 */
-Array.prototype.softCompare = function(searchStr) {
+Array.prototype.softContains = function(searchStr) {
   for (var i=0; i<this.length; i++) {
     console.log('---->>>', this[i], searchStr, this[i].indexOf(searchStr), searchStr.indexOf(this[i]));
     if(this[i].indexOf(searchStr) !== -1) return true;
@@ -86,20 +86,20 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // If true, the values of `start` only need to exist 
     // within the incoming data, instead of at the beginning of the packet. 
     // Good for posts with known headers but unknown bodies
-    var relaxedStartChecking, usingAlternate;
+    var useSoftContains, useAlternate;
     
     // if true, we are using alternate starts and enders
     if (self.alternate) {
-      // use the alternate starts, enders
-      usingAlternate = true;
       // array of valid start strings, ex: ['AT', 'OK', 'LETS BEGIN']
       starts = self.alternate[0]; 
       enders = self.alternate[1];
-      // use relaxed checking for starts
-      relaxedStartChecking = self.alternate[2] ? true : false;
+      // use the alternate starts, enders
+      useAlternate = true;
+      // use soft checking of start array
+      useSoftContains = self.alternate[2] ? true : false;
     } else {
-      usingAlternate = false;
-      relaxedStartChecking = false;
+      useAlternate = false;
+      useSoftContains = false;
     }
 
     if (self.debug) {
@@ -114,7 +114,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return self.started;
     }
 
-    function isDataInStartsArray() {
+    function isDataInStartArrayStrict() {
       return starts.indexOf(data) === -1 ? false : true;
     }
 
@@ -126,7 +126,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // the string we want, for example:
     //   ['OK=2'].indexOf('OK')
     // in this case indexOf will not be truthy, while
-    //   ['OK=1'].softCompare('OK')
+    //   ['OK=1'].softContains('OK')
     // will be truthy.
     // 
     // These type of responses from the sim900 chip are common when querying
@@ -135,20 +135,19 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // will return differently based on status, for example both
     //   +CGATT: 0
     //   +CGATT: 1
-    // are valid responses. By using softSearch we can assure that both
+    // are valid responses. By using softContains we can assure that both
     // are valid enders. 
     //
-    function isPartialDataInStartsArray() {
-      if(!usingAlternate) return false;
-      return starts.softCompare(data);
+    function isDataInStartArraySoft() {
+      return starts.softContains(data);
     }
 
     console.log('---------------');
     console.log('hasCallback', hasCallback());
     console.log('hasStarted', hasStarted());
-    console.log('relaxedStartChecking', relaxedStartChecking);
-    console.log('isDataInStartsArray', isDataInStartsArray());
-    console.log('isPartialDataInStartsArray', isPartialDataInStartsArray());
+    console.log('useSoftContains', useSoftContains);
+    console.log('isDataInStartArrayStrict', isDataInStartArrayStrict());
+    console.log('isDataInStartArraySoft', isDataInStartArraySoft());
 
     // if we aren't busy, 
     // or if we are busy but the first part of the reply doesn't match the message, 
@@ -159,11 +158,11 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
         console.log('---->>>>>>> Condition 1');
         return true;
       }
-      if(!hasStarted() && !relaxedStartChecking && !isDataInStartsArray()) {
+      if(!hasStarted() && !useSoftContains && !isDataInStartArrayStrict()) {
         console.log('---->>>>>>> Condition 2');
         return true;
       }
-      if(!hasStarted() && relaxedStartChecking && !isPartialDataInStartsArray()) {
+      if(!hasStarted() && useSoftContains && !isDataInStartArraySoft()) {
         console.log('---->>>>>>> Condition 3');
         return true;
       }
