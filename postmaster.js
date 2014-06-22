@@ -154,7 +154,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // or if we are busy but the first part of the reply doesn't match the message, 
     // or if we are busy and we are using alternates and 
     // it's unsolicited
-    function checkIsUnsolicited() {
+    function isUnsolicited() {
       if(!hasCallback()) {
         console.log('---->>>>>>> Condition 1');
         return true;
@@ -170,9 +170,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return false;
     }
 
-    var isUnsolicited = checkIsUnsolicited();
-
-    console.log('isUnsolicited', isUnsolicited);
+    console.log('isUnsolicited', isUnsolicited());
     console.log('---------------');
 
     // if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
@@ -186,7 +184,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // }
 
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    if (isUnsolicited) {
+    if (isUnsolicited()) {
       //  ^check that we're not using soft logic either...
       console.log('->>>>>>>>>> unsolicited');
       console.log(data);
