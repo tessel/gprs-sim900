@@ -135,13 +135,13 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return starts.softContains(data);
     }
 
-    console.log('---------------');
-    console.log('hasCallback', hasCallback());
-    console.log('hasStarted', hasStarted());
-    console.log('relaxedStartChecking', relaxedStartChecking);
-    console.log('isDataInStartsArray', isDataInStartsArray());
-    console.log('isPartialDataInStartsArray', isPartialDataInStartsArray());
-    console.log('---------------');
+    // console.log('---------------');
+    // console.log('hasCallback', hasCallback());
+    // console.log('hasStarted', hasStarted());
+    // console.log('relaxedStartChecking', relaxedStartChecking);
+    // console.log('isDataInStartsArray', isDataInStartsArray());
+    // console.log('isPartialDataInStartsArray', isPartialDataInStartsArray());
+    // console.log('---------------');
 
     // if we aren't busy, 
     // or if we are busy but the first part of the reply doesn't match the message, 
@@ -231,7 +231,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
   */
 
   var self = this;
-  self.debug = debug || false;
+  self.debug = debug || true;
 
   if (self.callback !== null) {
     callback(new Error('Postmaster busy'), []);
