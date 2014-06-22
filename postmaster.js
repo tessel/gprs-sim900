@@ -17,15 +17,23 @@ var EventEmitter = require('events').EventEmitter;
 * @param string, the string to search for 
 * @returns true if match, else false
 * @note will return true at first occurrence of match
+* @note will check value.indexOf(string) AND string.indexOf(value)
 * @example:
+*
 * ['Apple', 'Pear'].indexOf('Pear') === 1
 * ['Apple', 'Pear'].indexOf('Pe') === -1
-* ['Apple', 'Pear'].softContains('Pe') === true
+* ['Apple', 'Pear'].indexOf('Pearing') === -1
+* 
+* ['Apple', 'Pear'].softCompare('Pear') === true
+* ['Apple', 'Pear'].softCompare('Pe') === true
+* ['Apple', 'Pear'].softCompare('Pearing') === true
 *
 */
-Array.prototype.softContains = function(searchStr) {
+Array.prototype.softCompare = function(searchStr) {
   for (var i=0; i<this.length; i++) {
+    console.log('---->>>', this[i], searchStr, this[i].indexOf(searchStr), searchStr.indexOf(this[i]));
     if(this[i].indexOf(searchStr) !== -1) return true;
+    if(searchStr.indexOf(this[i]) !== -1) return true;
   }
   return false;
 }
@@ -118,7 +126,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // the string we want, for example:
     //   ['OK=2'].indexOf('OK')
     // in this case indexOf will not be truthy, while
-    //   ['OK=1'].softContains('OK')
+    //   ['OK=1'].softCompare('OK')
     // will be truthy.
     // 
     // These type of responses from the sim900 chip are common when querying
@@ -132,29 +140,40 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     //
     function isPartialDataInStartsArray() {
       if(!usingAlternate) return false;
-      return starts.softContains(data);
+      return starts.softCompare(data);
     }
 
-    // console.log('---------------');
-    // console.log('hasCallback', hasCallback());
-    // console.log('hasStarted', hasStarted());
-    // console.log('relaxedStartChecking', relaxedStartChecking);
-    // console.log('isDataInStartsArray', isDataInStartsArray());
-    // console.log('isPartialDataInStartsArray', isPartialDataInStartsArray());
-    // console.log('---------------');
+    console.log('---------------');
+    console.log('hasCallback', hasCallback());
+    console.log('hasStarted', hasStarted());
+    console.log('relaxedStartChecking', relaxedStartChecking);
+    console.log('isDataInStartsArray', isDataInStartsArray());
+    console.log('isPartialDataInStartsArray', isPartialDataInStartsArray());
 
     // if we aren't busy, 
     // or if we are busy but the first part of the reply doesn't match the message, 
     // or if we are busy and we are using alternates and 
     // it's unsolicited
     function checkIsUnsolicited() {
-      if(!hasCallback()) return true;
-      if(!hasStarted() && !isDataInStartsArray()) return true;
-      if(!hasStarted() && relaxedStartChecking && !isPartialDataInStartsArray()) return true;
+      if(!hasCallback()) {
+        console.log('---->>>>>>> Condition 1');
+        return true;
+      }
+      if(!hasStarted() && !relaxedStartChecking && !isDataInStartsArray()) {
+        console.log('---->>>>>>> Condition 2');
+        return true;
+      }
+      if(!hasStarted() && relaxedStartChecking && !isPartialDataInStartsArray()) {
+        console.log('---->>>>>>> Condition 3');
+        return true;
+      }
       return false;
     }
 
     var isUnsolicited = checkIsUnsolicited();
+
+    console.log('isUnsolicited', isUnsolicited);
+    console.log('---------------');
 
     // if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
     //     if (self.debug) {
