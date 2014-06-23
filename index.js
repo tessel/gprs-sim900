@@ -307,13 +307,8 @@ GPRS.prototype.emitMe = function (beginnings) {
   beginnings.forEach(function (beginning) {
     self.emissions.push(beginning);
   });
-  console.log(this.emissions.length);
-  console.log(this.emissions);
-  console.log(beginnings.length);
-  console.log(beginnings);
   if (this.emissions.length === beginnings.length) {
     //  This is the first time this was called, you should start notifying
-    console.log('boop');
     this._checkEmissions();
   }
 };
@@ -327,7 +322,7 @@ GPRS.prototype.readSMS = function (index, mode, remove, callback) {
     mode
       0 - Mark the message as read
       1 - Do not chage the status of the message
-    remove
+    remove - Optional
       0 - Keep the message on the simcard
       1 - Delete the message from the simcard once it is marked read.
     callback
@@ -344,6 +339,14 @@ GPRS.prototype.readSMS = function (index, mode, remove, callback) {
         3 - 'OK'
       if successful
   */
+
+  if (typeof callback === 'undefined') {
+    callback = remove;
+    remove = 0;
+  }
+
+  next = next || remove;
+  
   var self = this;
   this._txrx('AT+CMGR=' + index + ',' + mode, 10000, function (err, message) {
     if (remove==1) {
