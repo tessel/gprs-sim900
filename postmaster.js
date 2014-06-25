@@ -130,7 +130,8 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
 
   if (self.callback !== null) {
     callback(new Error('Postmaster busy'), []);
-  } else {
+  } 
+  else {
     if (alternate) {
       self.alternate = alternate;
     }
