@@ -7,6 +7,38 @@ to route them appropriately.
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
+/**
+* Iterate each value of array and check if value contains
+* a specific string. 
+* 
+* Differs from indexOf in that it performs indexOf on each
+* value in the string, so only a partial match is needed.  
+*
+* @param string, the string to search for 
+* @returns true if match, else false
+* @note will return true at first occurrence of match
+* @note will check value.indexOf(string) AND string.indexOf(value)
+* @example:
+*
+* ['Apple', 'Pear'].indexOf('Pear') === 1
+* ['Apple', 'Pear'].indexOf('Pe') === -1
+* ['Apple', 'Pear'].indexOf('Pearing') === -1
+* 
+* ['Apple', 'Pear'].softContains('Pear') === true
+* ['Apple', 'Pear'].softContains('Pe') === true
+* ['Apple', 'Pear'].softContains('Pearing') === true
+*
+*/
+Array.prototype.softContains = function(searchStr) {
+  for (var i=0; i<this.length; i++) {
+    // sometime array values could be buffers! 
+    if(typeof this[i] !== 'string') return false; 
+    if(this[i].indexOf(searchStr) !== -1) return true;
+    if(searchStr.indexOf(this[i]) !== -1) return true;
+  }
+  return false;
+}
+
 function Postmaster (myPacketizer, enders, overflow, size, debug) {
   /*
   Constructor for the postmaster
@@ -46,26 +78,116 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
   
   //  when we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
-    var starts = [self.message];
+    // wraps message as default start
+    // this means a reply packet must start with the message
+    // to be valid. 
+    // ex: ['AT']
+    var starts = [self.message]; 
     var enders = self.enders;
+    // If true, the values of `start` only need to exist 
+    // within the incoming data, instead of at the beginning of the packet. 
+    // Good for posts with known headers but unknown bodies
+    var useSoftContains, useAlternate;
+    
+    // if true, we are using alternate starts and enders
     if (self.alternate) {
-      //  use the alternate starts and ends
-      starts = self.alternate[0];
+      // array of valid start strings, ex: ['AT', 'OK', 'LETS BEGIN']
+      starts = self.alternate[0]; 
       enders = self.alternate[1];
+      // use the alternate starts, enders
+      useAlternate = true;
+      // use soft checking of start array
+      useSoftContains = self.alternate[2] ? true : false;
+    } else {
+      useAlternate = false;
+      useSoftContains = false;
     }
 
     if (self.debug) {
       console.log('got a packet with ' + [data], '\nstarts:', starts, '\nenders:', enders);
     }
 
+    function hasCallback() {
+      return self.callback !== null; 
+    }
+
+    function hasStarted() {
+      return self.started;
+    }
+
+    function isDataInStartArrayStrict() {
+      return starts.indexOf(data) === -1 ? false : true;
+    }
+
+    // returns true is data is contained in alternate array
+    // which is determined by comparing the length of the array to the 
+    // length of the array when we remove items matching data
+    //
+    // Sometimes packet contains other characters in addition to
+    // the string we want, for example:
+    //   ['OK=2'].indexOf('OK')
+    // in this case indexOf will not be truthy, while
+    //   ['OK=1'].softContains('OK')
+    // will be truthy.
+    // 
+    // These type of responses from the sim900 chip are common when querying
+    // statuses. For example 
+    //   AT+CGATT?
+    // will return differently based on status, for example both
+    //   +CGATT: 0
+    //   +CGATT: 1
+    // are valid responses. By using softContains we can assure that both
+    // are valid enders. 
+    //
+    function isDataInStartArraySoft() {
+      return starts.softContains(data);
+    }
+
+    console.log('---------------');
+    console.log('hasCallback', hasCallback());
+    console.log('hasStarted', hasStarted());
+    console.log('useSoftContains', useSoftContains);
+    console.log('isDataInStartArrayStrict', isDataInStartArrayStrict());
+    console.log('isDataInStartArraySoft', isDataInStartArraySoft());
+
+    // if we aren't busy, 
+    // or if we are busy but the first part of the reply doesn't match the message, 
+    // or if we are busy and we are using alternates and 
+    // it's unsolicited
+    function isUnsolicited() {
+      if(!hasCallback()) {
+        console.log('---->>>>>>> Condition 1');
+        return true;
+      }
+      if(!hasStarted() && !useSoftContains && !isDataInStartArrayStrict()) {
+        console.log('---->>>>>>> Condition 2');
+        return true;
+      }
+      if(!hasStarted() && useSoftContains && !isDataInStartArraySoft()) {
+        console.log('---->>>>>>> Condition 3');
+        return true;
+      }
+      return false;
+    }
+
+    console.log('isUnsolicited', isUnsolicited());
+    console.log('---------------');
+
+    // if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
+    //     if (self.debug) {
+    //       console.log([data], [partialStart], data.indexOf(partialStart));
+    //     }
+    //     return data.indexOf(partialStart) === -1;
+    //   }).length != self.alternate[0].length)) {
+    //   //  ^check that we're not using soft logic either...
+    //   self.emit('unsolicited', data); 
+    // }
+
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
-        if (self.debug) {
-          console.log([data], [partialStart], data.indexOf(partialStart));
-        }
-        return data.indexOf(partialStart) === -1;
-      }).length != self.alternate[0].length)) {
+    if (isUnsolicited()) {
       //  ^check that we're not using soft logic either...
+      console.log('->>>>>>>>>> unsolicited');
+      console.log(data);
       self.emit('unsolicited', data); 
     }
     else {
@@ -126,7 +248,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
   */
 
   var self = this;
-  self.debug = debug || false;
+  self.debug = debug || true;
 
   if (self.callback !== null) {
     callback(new Error('Postmaster busy'), []);
