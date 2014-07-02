@@ -55,11 +55,13 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     }
 
     if (self.debug) {
-      console.log('got a packet with ' + [data], '\nstarts:', starts, '\nenders:', enders);
+      console.log('postmaster got packet: ' + [data], '\nstarts:', starts, '\nenders:', enders);
     }
 
     //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
-    if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
+    if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) 
+      && !(!self.started && self.alternate && self.alternate[2] 
+      && self.alternate[0].filter(function(partialStart) {
         if (self.debug) {
           console.log([data], [partialStart], data.indexOf(partialStart));
         }
@@ -126,12 +128,10 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
   */
 
   var self = this;
-  self.debug = debug || false;
 
   if (self.callback !== null) {
     callback(new Error('Postmaster busy'), []);
-  } 
-  else {
+  } else {
     if (alternate) {
       self.alternate = alternate;
     }
@@ -162,8 +162,13 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       reply(err, []);
     }, patience);
     //  if we get something
+
     self.once('post', function(err, data) {
+      self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226
       clearTimeout(panic);
+      if (self.debug) {
+        console.log("postmaster replying", data);
+      }
       reply(err, data);
     });
   }

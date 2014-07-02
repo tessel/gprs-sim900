@@ -42,7 +42,7 @@ function GPRS (hardware) {
   self.emissions = [];
   self.powered = null;
   //  The defaults are fine for most of Postmaster's args
-  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> ']);
+  self.postmaster = new Postmaster(self.packetizer, ['OK', 'ERROR', '> '], null, null, DEBUG);
 }
 
 util.inherits(GPRS, EventEmitter);
@@ -188,6 +188,12 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
         for (var i = 0; i < data.length; i++) {
           //  Allow start of transmission packets to be valid
           correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
+          
+          if (DEBUG) {
+            console.log("data array", [data[i], '\\x00' + data[i], '\x00' + data[i]]);
+            console.log("replies", replies);
+            console.log("replies[0]", replies[0], replies[0][i]);
+          }
         }
       }
       self.emit('_intermediate', correct);
@@ -195,6 +201,9 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
     //  Still more to do in the chain
     if (messages.length > 0) {
       var func = (messages.length === 1) ? callback:_intermediate;
+      if (DEBUG) {
+        console.log("_txrx sending", messages[0]);
+      }
       self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
       //  If we have more to do before the base case, respond to the '_intermediate' event and keep going
       if (func === _intermediate) {

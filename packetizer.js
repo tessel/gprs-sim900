@@ -47,7 +47,7 @@ function checkEnd(message, incoming, ender) {
   return (message + incoming).slice(message.length - ender.length + 1) === ender;
 }
 
-function Packetizer(uart, ender, blacklist) {
+function Packetizer(uart, ender, blacklist, debug) {
   /*
   packetize the incoming UART stream
 
@@ -60,6 +60,7 @@ function Packetizer(uart, ender, blacklist) {
       an array of messages you don't care about, ie ['UNDER-VOLTAGE WARNNING']
   */
 
+  this.debug = debug || false;
   this.ender = ender || '\n';
   this.blacklist = blacklist || ['UNDER-VOLTAGE WARNNING'];
 
@@ -148,6 +149,10 @@ Packetizer.prototype.packetize = function() {
         if (!/^\s*$/.test(self.latestMessage + thing) &&
             ! self.checkBlacklist(self.latestMessage))
         {
+
+          if (self.debug){
+            console.log("Got a packet", self.latestMessage);
+          }
           //  we don't want "empty" or blacklisted packets
           self.emit('packet', self.latestMessage);
           // console.log('--> emitting',  self.latestMessage);
