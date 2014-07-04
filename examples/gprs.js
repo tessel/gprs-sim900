@@ -17,22 +17,34 @@ var message = 'Text from a Tessel!';
 var gprs = gprslib.use(hardware); 
 gprs.on('ready', function() {
   console.log('GPRS module connected to Tessel. Searching for network...')
-  //  Give it 10 more seconds to connect to the network, then try to send an SMS
   setTimeout(function() {
-    console.log('Sending', message, 'to', phoneNumber, '...');
-    // Send message
-    gprs.sendSMS(phoneNumber, message, function smsCallback(err, data) {
-      if (err) {
-        return console.log(err);
-      }
-      var success = data[0] !== -1;
-      console.log('Text sent:', success);
-      if (success) {
-        // If successful, log the number of the sent text
-        console.log('GPRS Module sent text #', data[0]);
-      }
+    gprs.getCIMI(function(err, CIMI){
+      console.log("got IMSI", CIMI);
+      gprs.getGSMStatus(function(err, gsm){
+        console.log("got gsm", gsm);
+        gprs.getGPRSStatus(function(err, gprs){
+          console.log("got gprs", gprs);
+        });
+      });
     });
   }, 10000);
+
+  // //  Give it 10 more seconds to connect to the network, then try to send an SMS
+  // setTimeout(function() {
+  //   console.log('Sending', message, 'to', phoneNumber, '...');
+  //   // Send message
+  //   gprs.sendSMS(phoneNumber, message, function smsCallback(err, data) {
+  //     if (err) {
+  //       return console.log(err);
+  //     }
+  //     var success = data[0] !== -1;
+  //     console.log('Text sent:', success);
+  //     if (success) {
+  //       // If successful, log the number of the sent text
+  //       console.log('GPRS Module sent text #', data[0]);
+  //     }
+  //   });
+  // }, 10000);
 });
 
 //  Emit unsolicited messages beginning with...
