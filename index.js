@@ -157,7 +157,10 @@ GPRS.prototype.answerCall = function (callback) {
   });
 };
 
-// Send a series of back-to-back messages recursively and do something with the final result. Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the callback. The arguments `messages` and `patience` must be of the same length. Like `_txrx`, this function is also useful for expanding the module's functionality.
+// Send a series of back-to-back messages recursively and do something with the final result. 
+// Other results, if not of the form [`messages[n]`, 'OK'] error out and pass false to the 
+// callback. The arguments `messages` and `patience` must be of the same length. Like `_txrx`, 
+// this function is also useful for expanding the module's functionality.
 GPRS.prototype._chain = function (messages, patiences, replies, callback) {
   /*
   mesages
@@ -165,7 +168,8 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
   patiences
     An array of numbers; milliseconds to wait for each command to return
   replies
-    An array of expected replies (arrays of strings). If any index is false-y, its reply simply must not error out.
+    An array of expected replies (arrays of strings). If any index is false-y, its 
+    reply simply must not error out.
   callback
     Callback function. Args come from the last function in the chain.
 
@@ -196,29 +200,25 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
           }
         }
       }
-      self.emit('_intermediate', correct);
+      // self.emit('_intermediate', correct);
+
+      if (correct) {
+        self._chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
+      } else {
+        self.postmaster.forceClear();
+        if (callback) {
+          callback(new Error('Chain broke on ' + messages[0]), false);
+        }
+      }
     };
     //  Still more to do in the chain
-    if (messages.length > 0) {
+    // if (messages.length > 0) {
       var func = (messages.length === 1) ? callback:_intermediate;
       if (DEBUG) {
         console.log("_txrx sending", messages[0]);
       }
       self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
-      //  If we have more to do before the base case, respond to the '_intermediate' event and keep going
-      if (func === _intermediate) {
-        self.once('_intermediate', function (correct) {
-          if (correct) {
-            self._chain(messages.slice(1), patiences.slice(1), replies.slice(1), callback);
-          } else {
-            self.postmaster.forceClear();
-            if (callback) {
-              callback(new Error('Chain broke on ' + messages[0]), false);
-            }
-          }
-        });
-      }
-    }
+    // }
   }
 };
 
@@ -298,6 +298,28 @@ GPRS.prototype._checkEmissions = function () {
     }
   });
 };
+
+GPRS.prototype.getCIMI = function(callback){
+  var self = this;
+  this._txrx('AT+CIMI', 10000, function (err, CIMI) {
+    callback(err, CIMI);
+  });
+}
+
+GPRS.prototype.getGSMStatus = function(callback){
+  var self = this;
+  this._txrx('AT+CREG?', 10000, function (err, status) {
+    callback(err, status);
+  });
+}
+
+GPRS.prototype.getGPRSStatus = function(callback){
+  var self = this;
+  this._txrx('AT+CGREG?', 10000, function (err, status) {
+    callback(err, status);
+  });
+}
+
 
 // Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. This function configures the module to emit events that beign with a specific String. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 GPRS.prototype.emitMe = function (beginnings) {

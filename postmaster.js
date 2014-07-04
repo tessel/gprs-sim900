@@ -153,7 +153,8 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
         temp(err, data);
       }
     };
-  
+
+
     //  if we time out
     var panic = setTimeout(function() {
       self.removeListener('post', reply);
@@ -164,7 +165,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     //  if we get something
 
     self.once('post', function(err, data) {
-      self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226
+      // self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226
       clearTimeout(panic);
       if (self.debug) {
         console.log("postmaster replying", data);
