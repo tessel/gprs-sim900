@@ -25,16 +25,19 @@ var EventEmitter = require('events').EventEmitter;
 * ['Apple', 'Pear'].indexOf('Pearing') === -1
 * 
 * ['Apple', 'Pear'].softContains('Pear') === true
-* ['Apple', 'Pear'].softContains('Pe') === true
+* ['Apple', 'Pear'].softContains('Pe') === false
 * ['Apple', 'Pear'].softContains('Pearing') === true
 *
 */
 Array.prototype.softContains = function(searchStr) {
-  for (var i=0; i<this.length; i++) {
+  for (var i = 0; i < this.length; i++) {
     // sometime array values could be buffers! 
-    if(typeof this[i] !== 'string') return false; 
-    if(this[i].indexOf(searchStr) !== -1) return true;
-    if(searchStr.indexOf(this[i]) !== -1) return true;
+    if (typeof this[i] !== 'string') {
+      return false;
+    }
+    if (searchStr.indexOf(this[i]) !== -1) {
+      return true;
+    }
   }
   return false;
 }
