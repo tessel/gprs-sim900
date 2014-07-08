@@ -284,9 +284,9 @@ Postmaster.prototype.forceClear = function(typ)
   this.alternate = null;
 };
 
-Postmaster.prototype._debugPrint = function (thing) {
+Postmaster.prototype._debugPrint = function () {
   if (this.debug) {
-    console.log(thing);
+    console.log(util.format.apply(util, arguments));
   }
 }
 
