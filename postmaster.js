@@ -282,7 +282,6 @@ Postmaster.prototype.forceClear = function(typ)
   this.message = '';
   this.started = false;
   this.alternate = null;
-  this.enders = ['OK', 'ERROR'];
 };
 
 Postmaster.prototype._debugPrint = function (thing) {
