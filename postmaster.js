@@ -31,7 +31,7 @@ var EventEmitter = require('events').EventEmitter;
 */
 Array.prototype.softContains = function(searchStr) {
   for (var i = 0; i < this.length; i++) {
-    // sometime array values could be buffers! 
+    // Sometimes array values could be buffers! 
     if (typeof this[i] !== 'string') {
       return false;
     }
@@ -79,11 +79,10 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
 
   var self = this;
   
-  //  when we get a packet, see if it starts or ends a message
+  //  When we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
-    // wraps message as default start
-    // this means a reply packet must start with the message
-    // to be valid. 
+    // Wraps message as default start, which means a
+    // reply packet must start with the message to be valid. 
     // ex: ['AT']
     var starts = [self.message]; 
     var enders = self.enders;
@@ -92,14 +91,14 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // Good for posts with known headers but unknown bodies
     var useSoftContains, useAlternate;
     
-    // if true, we are using alternate starts and enders
+    // If true, we are using alternate starts and enders
     if (self.alternate) {
-      // array of valid start strings, ex: ['AT', 'OK', 'LETS BEGIN']
+      // Array of valid start strings, ex: ['AT', 'OK', 'LETS BEGIN']
       starts = self.alternate[0]; 
       enders = self.alternate[1];
-      // use the alternate starts, enders
+      // Use the alternate starts, enders
       useAlternate = true;
-      // use soft checking of start array
+      // Use soft checking of start array
       useSoftContains = self.alternate[2] ? true : false;
     } else {
       useAlternate = false;
@@ -122,18 +121,14 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return starts.indexOf(data) === -1 ? false : true;
     }
 
-    // returns true is data is contained in alternate array
-    // which is determined by comparing the length of the array to the 
-    // length of the array when we remove items matching data
-    //
-    // Sometimes packet contains other characters in addition to
+    // Sometimes a packet contains other characters in addition to
     // the string we want, for example:
-    //   ['OK=2'].indexOf('OK')
+    //   ['OK', 'ERROR'].indexOf('OK.')
     // in this case indexOf will not be truthy, while
-    //   ['OK=1'].softContains('OK')
+    //   ['OK', 'ERROR'].softContains('OK.')
     // will be truthy.
     // 
-    // These type of responses from the sim900 chip are common when querying
+    // These type of responses from the SIM900 chip are common when querying
     // statuses. For example 
     //   AT+CGATT?
     // will return differently based on status, for example both
@@ -153,7 +148,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     console.log('isDataInStartArrayStrict', isDataInStartArrayStrict());
     console.log('isDataInStartArraySoft', isDataInStartArraySoft());
 
-    // if we aren't busy, 
+    // If we aren't busy, 
     // or if we are busy but the first part of the reply doesn't match the message, 
     // or if we are busy and we are using alternates and 
     // it's unsolicited
@@ -176,19 +171,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     console.log('isUnsolicited', isUnsolicited());
     console.log('---------------');
 
-    // if ((self.callback === null || (!self.started && starts.indexOf(data) === -1)) && !(!self.started && self.alternate && self.alternate[2] && self.alternate[0].filter(function(partialStart) {
-    //     if (self.debug) {
-    //       console.log([data], [partialStart], data.indexOf(partialStart));
-    //     }
-    //     return data.indexOf(partialStart) === -1;
-    //   }).length != self.alternate[0].length)) {
-    //   //  ^check that we're not using soft logic either...
-    //   self.emit('unsolicited', data); 
-    // }
-
-    //  if we aren't busy, or if we are busy but the first part of the reply doesn't match the message, it's unsolicited
     if (isUnsolicited()) {
-      //  ^check that we're not using soft logic either...
       console.log('->>>>>>>>>> unsolicited');
       console.log(data);
       self.emit('unsolicited', data); 
@@ -199,7 +182,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
         }
       self.started = true;
       self.RXQueue.push(data);
-      //  check to see of we've finished the post
+      //  Check to see of we've finished the post
       if (enders.indexOf(data) > -1) {
         if (self.debug) {
           console.log('\t---> Found '+ data + ' in enders:\n', enders, '\nEmitting a post with:\n', self.RXQueue);
@@ -211,7 +194,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
         self.emit('post', null, temp);
       }
     }
-    //  check overflow
+    //  Check overflow
     if (self.RXQueue.length > size) {
       self.emit('overflow', null, self.RXQueue);
       self.RXQueue = [];
@@ -228,7 +211,7 @@ util.inherits(Postmaster, EventEmitter);
 
 Postmaster.prototype.send = function (message, patience, callback, alternate, debug) {
   /*
-  Aend a message and add call its callback with the data from the reply
+  Send a message and add call its callback with the data from the reply
   
   args
     message
@@ -260,7 +243,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     if (alternate) {
       self.alternate = alternate;
     }
-    //  set things up
+    //  Set things up
     self.callback = callback;
     patience = patience || 10000;
     
@@ -279,15 +262,15 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       }
     };
   
-    //  if we time out
+    //  If we time out
     var panic = setTimeout(function() {
       self.removeListener('post', reply);
       var err = new Error('no reply after ' + patience + ' ms to message "' + message + '"');
       err.type = 'timeout';
       reply(err, []);
     }, patience);
-    //  if we get something
-
+    
+    //  If we get something
     self.once('post', function(err, data) {
       self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226
       clearTimeout(panic);
