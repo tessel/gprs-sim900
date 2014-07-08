@@ -27,8 +27,8 @@ var EventEmitter = require('events').EventEmitter;
 * ['Apple', 'Pear'].softContains('Pear') === true
 * ['Apple', 'Pear'].softContains('Pe') === false
 * ['Apple', 'Pear'].softContains('Pearing') === true
-*
 */
+
 Array.prototype.softContains = function(searchStr) {
   for (var i = 0; i < this.length; i++) {
     // Sometimes array values could be buffers! 
@@ -134,7 +134,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     //   +CGATT: 1
     // are valid responses. By using softContains we can assure that both
     // are valid enders. 
-    //
+
     function isDataInStartArraySoft() {
       return starts.softContains(data);
     }
