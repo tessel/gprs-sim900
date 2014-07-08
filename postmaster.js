@@ -105,9 +105,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       useSoftContains = false;
     }
 
-    if (self.debug) {
-      console.log('postmaster got packet: ' + [data], '\nstarts:', starts, '\nenders:', enders);
-    }
+    self._debugPrint('postmaster got packet: ' + [data], '\nstarts:', starts, '\nenders:', enders);
 
     function hasCallback() {
       return self.callback !== null; 
@@ -141,12 +139,12 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return starts.softContains(data);
     }
 
-    console.log('---------------');
-    console.log('hasCallback', hasCallback());
-    console.log('hasStarted', hasStarted());
-    console.log('useSoftContains', useSoftContains);
-    console.log('isDataInStartArrayStrict', isDataInStartArrayStrict());
-    console.log('isDataInStartArraySoft', isDataInStartArraySoft());
+    self._debugPrint('---------------');
+    self._debugPrint('hasCallback', hasCallback());
+    self._debugPrint('hasStarted', hasStarted());
+    self._debugPrint('useSoftContains', useSoftContains);
+    self._debugPrint('isDataInStartArrayStrict', isDataInStartArrayStrict());
+    self._debugPrint('isDataInStartArraySoft', isDataInStartArraySoft());
 
     // If we aren't busy, 
     // or if we are busy but the first part of the reply doesn't match the message, 
@@ -154,39 +152,35 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     // it's unsolicited
     function isUnsolicited() {
       if(!hasCallback()) {
-        console.log('---->>>>>>> Condition 1');
+        self._debugPrint('---->>>>>>> Condition 1');
         return true;
       }
       if(!hasStarted() && !useSoftContains && !isDataInStartArrayStrict()) {
-        console.log('---->>>>>>> Condition 2');
+        self._debugPrint('---->>>>>>> Condition 2');
         return true;
       }
       if(!hasStarted() && useSoftContains && !isDataInStartArraySoft()) {
-        console.log('---->>>>>>> Condition 3');
+        self._debugPrint('---->>>>>>> Condition 3');
         return true;
       }
       return false;
     }
 
-    console.log('isUnsolicited', isUnsolicited());
-    console.log('---------------');
+    self._debugPrint('isUnsolicited', isUnsolicited());
+    self._debugPrint('---------------');
 
     if (isUnsolicited()) {
-      console.log('->>>>>>>>>> unsolicited');
-      console.log(data);
+      self._debugPrint('->>>>>>>>>> unsolicited');
+      self._debugPrint(data);
       self.emit('unsolicited', data); 
     }
     else {
-      if (self.debug) {
-        console.log('adding', [data], 'to the RXQueue');
-        }
+      self._debugPrint('adding', [data], 'to the RXQueue');
       self.started = true;
       self.RXQueue.push(data);
       //  Check to see of we've finished the post
       if (enders.indexOf(data) > -1) {
-        if (self.debug) {
-          console.log('\t---> Found '+ data + ' in enders:\n', enders, '\nEmitting a post with:\n', self.RXQueue);
-        }
+        self._debugPrint('\t---> Found '+ data + ' in enders:\n', enders, '\nEmitting a post with:\n', self.RXQueue);
         var temp = self.RXQueue;
         self.RXQueue = [];
         self.started = false;
@@ -235,7 +229,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
 
   var self = this;
 
-  self.debug = debug || true;
+  self.debug = debug || false;
 
   if (self.callback !== null) {
     callback(new Error('Postmaster busy'), []);
@@ -250,9 +244,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     self.message = message;
     self.uart.write(message);
     self.uart.write('\r\n');
-    if (self.debug) {
-      console.log('sent', [message], 'on uart', [self.uart]);
-    }
+    self._debugPrint('sent', [message], 'on uart', [self.uart]);
 
     var reply = function(err, data) {
       var temp = self.callback;
@@ -274,9 +266,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     self.once('post', function(err, data) {
       self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226
       clearTimeout(panic);
-      if (self.debug) {
-        console.log("postmaster replying", data);
-      }
+      self._debugPrint("postmaster replying", data);
       reply(err, data);
     });
   }
@@ -295,5 +285,10 @@ Postmaster.prototype.forceClear = function(typ)
   this.enders = ['OK', 'ERROR'];
 };
 
+Postmaster.prototype._debugPrint = function (thing) {
+  if (this.debug) {
+    console.log(thing);
+  }
+}
 
 module.exports = Postmaster;
