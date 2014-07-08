@@ -28,7 +28,6 @@ var EventEmitter = require('events').EventEmitter;
 * ['Apple', 'Pear'].softContains('Pe') === false
 * ['Apple', 'Pear'].softContains('Pearing') === true
 */
-
 Array.prototype.softContains = function(searchStr) {
   for (var i = 0; i < this.length; i++) {
     // Sometimes array values could be buffers! 
@@ -81,14 +80,17 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
   
   //  When we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
-    // Wraps message as default start, which means a
-    // reply packet must start with the message to be valid. 
-    // ex: ['AT']
+    /*
+    Wraps message as default start, which means a reply packet 
+    must start with the message to be valid. ex: ['AT']
+    */
     var starts = [self.message]; 
     var enders = self.enders;
-    // If true, the values of `start` only need to exist 
-    // within the incoming data, instead of at the beginning of the packet. 
-    // Good for posts with known headers but unknown bodies
+    /*
+    If true, the values of `start` only need to exist within
+    the incoming data, instead of at the beginning of the packet. 
+    Good for posts with known headers but unknown bodies.
+    */
     var useSoftContains, useAlternate;
     
     // If true, we are using alternate starts and enders
@@ -119,22 +121,23 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
       return starts.indexOf(data) === -1 ? false : true;
     }
 
-    // Sometimes a packet contains other characters in addition to
-    // the string we want, for example:
-    //   ['OK', 'ERROR'].indexOf('OK.')
-    // in this case indexOf will not be truthy, while
-    //   ['OK', 'ERROR'].softContains('OK.')
-    // will be truthy.
-    // 
-    // These type of responses from the SIM900 chip are common when querying
-    // statuses. For example 
-    //   AT+CGATT?
-    // will return differently based on status, for example both
-    //   +CGATT: 0
-    //   +CGATT: 1
-    // are valid responses. By using softContains we can assure that both
-    // are valid enders. 
-
+    /*
+    Sometimes a packet contains other characters in addition to
+    the string we want, for example:
+      ['OK', 'ERROR'].indexOf('OK.')
+    in this case indexOf will not be truthy, while
+      ['OK', 'ERROR'].softContains('OK.')
+    will be truthy.
+    
+    These type of responses from the SIM900 chip are common when querying
+    statuses. For example 
+      AT+CGATT?
+    will return differently based on status, for example both
+      +CGATT: 0
+      +CGATT: 1
+    are valid responses. By using softContains we can assure that both
+    are valid enders. 
+    */
     function isDataInStartArraySoft() {
       return starts.softContains(data);
     }
@@ -146,10 +149,12 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     self._debugPrint('isDataInStartArrayStrict', isDataInStartArrayStrict());
     self._debugPrint('isDataInStartArraySoft', isDataInStartArraySoft());
 
-    // If we aren't busy, 
-    // or if we are busy but the first part of the reply doesn't match the message, 
-    // or if we are busy and we are using alternates and 
-    // it's unsolicited
+    /*
+    If we aren't busy, or 
+    if we are busy but the first part of the reply doesn't match the message, or
+    if we are busy and we are using alternates...
+    it's unsolicited
+    */
     function isUnsolicited() {
       if(!hasCallback()) {
         self._debugPrint('---->>>>>>> Condition 1');
