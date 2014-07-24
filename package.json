@@ -17,7 +17,8 @@
   },
   "author": "Eric Kolker",
   "license": "MIT",
+  "dependencies": {},
   "devDependencies": {
-    "tinytap": "~0.0.2"
+    "tinytap": "^0.2.0"
   }
 }
