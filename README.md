@@ -13,13 +13,23 @@ npm install gprs-sim900
 
 ![GPRS module minimum configuration](https://s3.amazonaws.com/technicalmachine-assets/doc+pictures/gprs-hw-set.jpg)
 
-#### HW configuration checklist
+#### HW Configuration Checklist
 
 * GPRS power input select header (three-pin header in board corner) moved to '3.3V Tessel' (the two pins closest to board corner).
 * Antenna plugged in
 * SIM card in holder (not pictured above)
 
 If the yellow `STATUS` light is on and the green `NETLIGHT` is blinking when the module is plugged in, then the module is configured correctly.
+
+###Purchasing a SIM Card
+For the purposes of the GPRS module, you will probably want a very basic SIM card. So simple that it can often be hard to convince the staff at many service providers to give you a plan that is that basic. We have found that it helps if you are very insistent about what features you want. 
+For full text/call functionality with Tessel's GPRS module, you will want a sim card that
+* is mini-SIM sized 
+* has just text and calling functionality
+* is pre-paid, not a monthly plan
+* is unlocked
+
+If you are clear and firm about your requirements when buying in store, you should not have any problem. You can also order a SIM card online from many providers. As for providers, we have had good luck with both AT&T and T-Mobile.
 
 ###A Note About SIM Cards
 SIM cards can only hold 20-30 SMS messages at a time, depending on the sim card you have. If your SIM stops emiting events as expected, you can use the command line and the AT command manual to manually delete messages you do not want to keep on the SIM, or you can use the remove option included in the readSMS function to automatically delete messages after you read or log the messages.
