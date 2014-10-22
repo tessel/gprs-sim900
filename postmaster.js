@@ -1,4 +1,4 @@
-/* 
+/*
 Packetizer is great in that it builds packets, but sometimes replies don't
 come in in an orderly fashion. If this happens, we need to be able to be able
 to route them appropriately.
@@ -9,12 +9,12 @@ var EventEmitter = require('events').EventEmitter;
 
 /**
 * Iterate each value of array and check if value contains
-* a specific string. 
-* 
-* Differs from indexOf in that it performs indexOf on each
-* value in the string, so only a partial match is needed.  
+* a specific string.
 *
-* @param string, the string to search for 
+* Differs from indexOf in that it performs indexOf on each
+* value in the string, so only a partial match is needed.
+*
+* @param string, the string to search for
 * @returns true if match, else false
 * @note will return true at first occurrence of match
 * @note will check value.indexOf(string) AND string.indexOf(value)
@@ -23,14 +23,14 @@ var EventEmitter = require('events').EventEmitter;
 * ['Apple', 'Pear'].indexOf('Pear') === 1
 * ['Apple', 'Pear'].indexOf('Pe') === -1
 * ['Apple', 'Pear'].indexOf('Pearing') === -1
-* 
+*
 * ['Apple', 'Pear'].softContains('Pear') === true
 * ['Apple', 'Pear'].softContains('Pe') === false
 * ['Apple', 'Pear'].softContains('Pearing') === true
 */
 Array.prototype.softContains = function(searchStr) {
   for (var i = 0; i < this.length; i++) {
-    // Sometimes array values could be buffers! 
+    // Sometimes array values could be buffers!
     if (typeof this[i] !== 'string') {
       return false;
     }
@@ -57,7 +57,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     debug
       Are we in debug mode?
   */
-  
+
   this.packetizer = myPacketizer;
   this.uart = myPacketizer.uart;
   this.RXQueue = [];
@@ -67,7 +67,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
   this.alternate = null;
   this.enders = enders || ['OK', 'ERROR'];
   this.debug = debug || false;
-  overflow = overflow || function(err, arg) { 
+  overflow = overflow || function(err, arg) {
     if (err) {
       console.log('err: ', err);
     } else {
@@ -77,26 +77,26 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
   size = size || 15;
 
   var self = this;
-  
+
   //  When we get a packet, see if it starts or ends a message
   this.packetizer.on('packet', function(data) {
     /*
-    Wraps message as default start, which means a reply packet 
+    Wraps message as default start, which means a reply packet
     must start with the message to be valid. ex: ['AT']
     */
-    var starts = [self.message]; 
+    var starts = [self.message];
     var enders = self.enders;
     /*
     If true, the values of `start` only need to exist within
-    the incoming data, instead of at the beginning of the packet. 
+    the incoming data, instead of at the beginning of the packet.
     Good for posts with known headers but unknown bodies.
     */
     var useSoftContains, useAlternate;
-    
+
     // If true, we are using alternate starts and enders
     if (self.alternate) {
       // Array of valid start strings, ex: ['AT', 'OK', 'LETS BEGIN']
-      starts = self.alternate[0]; 
+      starts = self.alternate[0];
       enders = self.alternate[1];
       // Use the alternate starts, enders
       useAlternate = true;
@@ -110,7 +110,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     self._debugPrint('postmaster got packet: ' + [data], '\nstarts:', starts, '\nenders:', enders);
 
     function hasCallback() {
-      return self.callback !== null; 
+      return self.callback !== null;
     }
 
     function hasStarted() {
@@ -128,15 +128,15 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     in this case indexOf will not be truthy, while
       ['OK', 'ERROR'].softContains('OK.')
     will be truthy.
-    
+
     These type of responses from the SIM900 chip are common when querying
-    statuses. For example 
+    statuses. For example
       AT+CGATT?
     will return differently based on status, for example both
       +CGATT: 0
       +CGATT: 1
     are valid responses. By using softContains we can assure that both
-    are valid enders. 
+    are valid enders.
     */
     function isDataInStartArraySoft() {
       return starts.softContains(data);
@@ -150,7 +150,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     self._debugPrint('isDataInStartArraySoft', isDataInStartArraySoft());
 
     /*
-    If we aren't busy, or 
+    If we aren't busy, or
     if we are busy but the first part of the reply doesn't match the message, or
     if we are busy and we are using alternates...
     it's unsolicited
@@ -177,7 +177,7 @@ function Postmaster (myPacketizer, enders, overflow, size, debug) {
     if (isUnsolicited()) {
       self._debugPrint('->>>>>>>>>> unsolicited');
       self._debugPrint(data);
-      self.emit('unsolicited', data); 
+      self.emit('unsolicited', data);
     }
     else {
       self._debugPrint('adding', [data], 'to the RXQueue');
@@ -211,7 +211,7 @@ util.inherits(Postmaster, EventEmitter);
 Postmaster.prototype.send = function (message, patience, callback, alternate, debug) {
   /*
   Send a message and add call its callback with the data from the reply
-  
+
   args
     message
       What to send (String or Buffer)
@@ -224,7 +224,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       If the third element of alternate is truth-y, then the given start values only need exist within the incoming data (good for posts with known headers but unknown bodies).
     debug
       Debug flag
-      
+
   Callback parameters
     err
       Error, if applicable
@@ -245,7 +245,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
     //  Set things up
     self.callback = callback;
     patience = patience || 10000;
-    
+
     self.message = message;
     self.uart.write(message);
     self.uart.write('\r\n');
@@ -258,7 +258,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
         temp(err, data);
       }
     };
-  
+
     //  If we time out
     var panic = setTimeout(function() {
       self.removeListener('post', reply);
@@ -266,7 +266,7 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
       err.type = 'timeout';
       reply(err, []);
     }, patience);
-    
+
     //  If we get something
     self.once('post', function(err, data) {
       self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226

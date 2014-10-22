@@ -21,7 +21,7 @@ function decode(array) {
       decoded += String.fromCharCode(array[i]);
     }
   }
-  return decoded; 
+  return decoded;
 }
 
 function checkEnd(message, incoming, ender) {
@@ -40,7 +40,7 @@ function checkEnd(message, incoming, ender) {
     true/false if the packet should end
   */
 
-  // the slow way: 
+  // the slow way:
   // return (message + incoming).indexOf(ender) != -1;
 
   // the fast way:
@@ -73,7 +73,7 @@ function Packetizer(uart, ender, blacklist, debug) {
 
   // Initialize UART
   this.uart = uart;
-} 
+}
 
 util.inherits(Packetizer, EventEmitter);
 
@@ -169,7 +169,7 @@ Packetizer.prototype.packetize = function() {
         }
         self.latestMessage = '';
         self.previousCharacter = '';
-      } 
+      }
       else
       {
         self.latestMessage += thing;
