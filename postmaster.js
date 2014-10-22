@@ -39,7 +39,7 @@ Array.prototype.softContains = function(searchStr) {
     }
   }
   return false;
-}
+};
 
 function Postmaster (myPacketizer, enders, overflow, size, debug) {
   /*
@@ -293,6 +293,6 @@ Postmaster.prototype._debugPrint = function () {
   if (this.debug) {
     console.log(util.format.apply(util, arguments));
   }
-}
+};
 
 module.exports = Postmaster;

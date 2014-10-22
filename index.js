@@ -359,7 +359,7 @@ GPRS.prototype.readSMS = function (index, mode, remove, callback) {
   var self = this;
   this._txrx('AT+CMGR=' + index + ',' + mode, 10000, function (err, message) {
     if (remove===1) {
-      self._txrx('AT+CMGD=' + index, 10000)
+      self._txrx('AT+CMGD=' + index, 10000);
     }
     callback(err, message);
   });
@@ -437,7 +437,7 @@ GPRS.prototype.togglePower = function (callback) {
 
 GPRS.prototype.disable = function () {
   this.uart.disable();
-}
+};
 
 // Connect the GPRS module and establish contact with the SIM900
 function use(hardware, callback) {
