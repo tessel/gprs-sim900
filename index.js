@@ -204,7 +204,7 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
       if (DEBUG) {
         console.log("_txrx sending", messages[0]);
       }
-      self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
+      self._txrx(messages[0], patiences[0], func, [[replies[0][0]], [replies[0][replies[0].length - 1]]]);
       //  If we have more to do before the base case, respond to the '_intermediate' event and keep going
       if (func === _intermediate) {
         self.once('_intermediate', function (correct) {
