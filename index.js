@@ -8,11 +8,11 @@
 // except according to those terms.
 
 /*
-At the center of Tessel's GPRS Module lies the SIM900, documentation 
+At the center of Tessel's GPRS Module lies the SIM900, documentation
 for which, including a full list of commands, can be found at:
 http://wm.sim.com/producten.aspx?id=1019
 
-The full AT command manual is here: 
+The full AT command manual is here:
 http://wm.sim.com/upfile/2013424141114f.pdf
 */
 
@@ -90,7 +90,7 @@ GPRS.prototype._establishContact = function (callback, rep, reps) {
       if (callback) {
         callback(err, self);
       }
-    } 
+    }
   }, [['AT', '\\x00AT', '\x00AT', 'OK'], ['OK'], 1]);
 };
 
@@ -188,7 +188,7 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
         for (var i = 0; i < data.length; i++) {
           //  Allow start of transmission packets to be valid
           correct = correct && ([data[i], '\\x00' + data[i], '\x00' + data[i]].indexOf(replies[0][i]) > -1);
-          
+
           if (DEBUG) {
             console.log("data array", [data[i], '\\x00' + data[i], '\x00' + data[i]]);
             console.log("replies", replies);
@@ -204,7 +204,7 @@ GPRS.prototype._chain = function (messages, patiences, replies, callback) {
       if (DEBUG) {
         console.log("_txrx sending", messages[0]);
       }
-      self._txrx(messages[0], patiences[0], func, [[messages[0]], [replies[0][replies[0].length - 1]]]);
+      self._txrx(messages[0], patiences[0], func, [[replies[0][0]], [replies[0][replies[0].length - 1]]]);
       //  If we have more to do before the base case, respond to the '_intermediate' event and keep going
       if (func === _intermediate) {
         self.once('_intermediate', function (correct) {
@@ -322,7 +322,7 @@ GPRS.prototype.emitMe = function (beginnings) {
   }
 };
 
-// Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card. 
+// Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card.
 GPRS.prototype.readSMS = function (index, mode, remove, callback) {
   /*
   Args - two possibilities
@@ -355,11 +355,11 @@ GPRS.prototype.readSMS = function (index, mode, remove, callback) {
   }
 
   next = next || remove;
-  
+
   var self = this;
   this._txrx('AT+CMGR=' + index + ',' + mode, 10000, function (err, message) {
     if (remove===1) {
-      self._txrx('AT+CMGD=' + index, 10000)
+      self._txrx('AT+CMGD=' + index, 10000);
     }
     callback(err, message);
   });
@@ -437,7 +437,7 @@ GPRS.prototype.togglePower = function (callback) {
 
 GPRS.prototype.disable = function () {
   this.uart.disable();
-}
+};
 
 // Connect the GPRS module and establish contact with the SIM900
 function use(hardware, callback) {
