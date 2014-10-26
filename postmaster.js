@@ -261,19 +261,22 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
 
     //  If we time out
     var panic = setTimeout(function() {
-      self.removeListener('post', reply);
+      self.forceClear();
+      self.removeListener('post', onPost);
       var err = new Error('no reply after ' + patience + ' ms to message "' + message + '"');
       err.type = 'timeout';
       reply(err, []);
     }, patience);
 
     //  If we get something
-    self.once('post', function(err, data) {
-      self.removeAllListeners('post'); // WORKAROUND: see bug https://github.com/tessel/runtime/issues/226
+    var onPost = function(err, data) {
       clearTimeout(panic);
+      self.removeListener('post', onPost);
       self._debugPrint("postmaster replying", data);
       reply(err, data);
-    });
+    };
+
+    self.on('post', onPost);
   }
 };
 
