@@ -261,11 +261,11 @@ Postmaster.prototype.send = function (message, patience, callback, alternate, de
 
     //  If we time out
     var panic = setTimeout(function() {
-      self.forceClear();
       self.removeListener('post', onPost);
       var err = new Error('no reply after ' + patience + ' ms to message "' + message + '"');
       err.type = 'timeout';
       reply(err, []);
+      self.forceClear();
     }, patience);
 
     //  If we get something
