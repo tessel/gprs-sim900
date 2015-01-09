@@ -299,12 +299,14 @@ GPRS.prototype._checkEmissions = function () {
   });
 };
 
-// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. This function configures the module to emit events that beign with a specific String. There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
+// Many unsolicited events are very useful to the user, such as when an SMS is received or a call is pending. 
+// This function configures the module to emit events that begin with a specific String.
+// There is probably a better way to do this, though, so consider the function unstable and pull requests welcome.
 GPRS.prototype.emitMe = function (beginnings) {
   /*
   Args
     beginnings
-      An array of Strings. If an unsolicited packet starts with one of them, emit it as an event by he same name
+      An array of Strings. If an unsolicited packet starts with one of them, emit it as an event with the same name
 
   Callback parameters
     None, but the events emitted will contain:
@@ -322,7 +324,8 @@ GPRS.prototype.emitMe = function (beginnings) {
   }
 };
 
-// Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. Note that these numbers are nonvolatile and associated with the SIM card.
+// Read the specified SMS. You'll want to parse the module's unsolicited packet to pull out the specific SMS number. 
+// Note that these numbers are nonvolatile and associated with the SIM card.
 GPRS.prototype.readSMS = function (index, mode, remove, callback) {
   /*
   Args - two possibilities
