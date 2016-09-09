@@ -20,6 +20,7 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var Packetizer = require('./packetizer.js');
 var Postmaster = require('./postmaster.js');
+var CommandChain = require('./commandchain.js');
 
 var DEBUG = false;  //  Debug messages to the console
 
@@ -418,6 +419,67 @@ GPRS.prototype.sendSMS = function (number, message, callback) {
   }
 };
 
+// perform a simple GET request to a web address
+GPRS.prototype.requestGET = function(webAddress, callback) {
+  /*
+  Args
+    webAddress
+      String, the web address to perform GET request to.
+    callback
+      Callback function
+
+  Callback parameters
+    err
+      Error message or null
+    success
+      Boolean, true 
+  */
+
+  var self = this;
+
+  if(!webAddress) {
+    callback(new Error('Did not specify a webAddress'), null);
+  }
+
+  // AT+SAPBR=1,1 tells the module we are ready to send. 
+  // note that in some cases you might need to send credentials
+  // first, including apn, username, and password.
+  // But in my testing with a T-Mobile phone+data SIM card, 
+  // this was not needed. 
+  var commands = new CommandChain([{
+    message: 'AT+SAPBR=1,1', 
+    patience: 5000,
+    expected: ['AT+SAPBR=1,1', 'OK']
+  }, {
+    message: 'AT+HTTPINIT',
+    patience: 5000,
+    expected: ['AT+HTTPINIT', 'OK']
+  }, {
+    message: 'AT+HTTPPARA="CID",1',
+    patience: 5000,
+    expected: ['AT+HTTPPARA="CID",1', 'OK']
+  }, {
+    message: 'AT+HTTPPARA="URL","'+webAddress+'"',
+    patience: 5000,
+    expected: ['AT+HTTPPARA="URL","'+webAddress+'"', 'OK']
+  }, {
+    message: 'AT+HTTPACTION=0', // 0 = GET, 1 = POST
+    patience: 5000,
+    expected: ['AT+HTTPACTION=0']
+  }, {
+    message: 'AT+HTTPTERM', // terminate HTTP, requiring that we INIT next time
+    patience: 5000,
+    expected: ['AT+HTTPTERM']
+  }]);
+
+  self._chain(commands.getMessages(), commands.getPatiences(), commands.getExpected(), function(errr, data) {
+    if(errr) {
+      return callback(errr);
+    }
+    callback(null, true); 
+  });
+
+}
 // Turn the module on or off by switching the power button (G3) electronically
 GPRS.prototype.togglePower = function (callback) {
   var self = this;
