@@ -23,6 +23,6 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
-    "tinytap": "^0.2.0"
+    "tinytap": "^1.2.2"
   }
 }
